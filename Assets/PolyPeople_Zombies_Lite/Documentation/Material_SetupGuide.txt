@@ -1,0 +1,18 @@
+■ Material Setup Guide
+
+◇ Zombies_Standard.mat A simple, lightweight material that applies the texture as-is. Perfect for projects that don't require color adjustments. 
+
+
+◇ Zombies_Custom.mat A high-functionality Shader Graph material.
+
+Hair & Clothing: Adjust Hue, Saturation, and Brightness independently, relative to the original texture colors.
+
+Skin Color: Freely customize the skin tone using the HDR color field.
+
+Flexibility: Swap textures and fine-tune all parameters directly from the Inspector.
+
+
+◇ Zombies_Custom_CityPeopleA.mat / B.mat These materials are pre-configured to match the color schemes of the "CityPeople" packs from the PolyPeople series (sold separately). They are ideal for maintaining a consistent visual style when using this package alongside the CityPeople assets.
+
+
+Use each material according to your project’s needs.
