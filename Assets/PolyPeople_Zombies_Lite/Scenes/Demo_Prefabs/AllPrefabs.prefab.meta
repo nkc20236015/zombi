@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: 2f08e0464d752364f93f01b7b2736a94
+guid: bebe1fe07f3b4ab45b2d5763c23d33f6
 PrefabImporter:
   externalObjects: {}
   userData: 
@@ -7,8 +7,8 @@ PrefabImporter:
   assetBundleVariant: 
 AssetOrigin:
   serializedVersion: 1
-  productId: 361744
-  packageName: 'PolyPeople Series - Zombies [Lite]'
+  productId: 361676
+  packageName: PolyPeople Series - Zombies
   packageVersion: 1.0
   assetPath: Assets/PolyPeople_Zombies_Lite/Scenes/Demo_Prefabs/AllPrefabs.prefab
-  uploadId: 862410
+  uploadId: 862360
