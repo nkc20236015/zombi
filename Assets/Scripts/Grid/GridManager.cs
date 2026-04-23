@@ -51,12 +51,15 @@ public class GridManager : MonoBehaviour
         if (!IsValidPosition(gp)) return false;
         if (cells[gp.x, gp.y].State != CellState.Empty) return false;
 
-        // プレイヤーが立っているセルには設置不可
-        GameObject player = GameObject.FindWithTag("Player");
-        if (player != null)
+        // 全てのNPCが立っているセルには設置不可
+        if (GameManager.Instance != null && GameManager.Instance.NPCs != null)
         {
-            Vector2Int playerGridPos = WorldToGrid(player.transform.position);
-            if (playerGridPos == gp) return false;
+            foreach (var npc in GameManager.Instance.NPCs)
+            {
+                if (npc == null) continue;
+                Vector2Int npcGridPos = WorldToGrid(npc.transform.position);
+                if (npcGridPos == gp) return false;
+            }
         }
 
         return true;

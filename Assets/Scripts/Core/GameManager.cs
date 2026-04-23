@@ -1,5 +1,6 @@
 using UnityEngine;
 using System;
+using System.Collections.Generic;
 
 /// <summary>
 /// ゲーム全体の状態を管理するシングルトン。
@@ -20,6 +21,10 @@ public class GameManager : MonoBehaviour
     public int CurrentDay => currentDay;
     public bool IsDaytime => currentGameState == GameState.Daytime || currentGameState == GameState.Dawn;
     public bool IsNight => currentGameState == GameState.Night;
+
+    [Header("NPCs")]
+    private List<NPCController> npcs = new List<NPCController>();
+    public IReadOnlyList<NPCController> NPCs => npcs;
 
     // Events
     /// <summary>ゲーム状態が変化したとき</summary>
@@ -54,13 +59,8 @@ public class GameManager : MonoBehaviour
         
         Debug.Log($"[GameManager] State changed: {previousState} -> {newState}");
         
-        // 夜間に入ったら自動的に戦闘モードに切り替え
-        if (newState == GameState.Night)
-        {
-            SetPlayerMode(PlayerMode.Combat);
-        }
         // 昼間に入ったら通常モードに戻す
-        else if (newState == GameState.Daytime)
+        if (newState == GameState.Daytime && currentPlayerMode != PlayerMode.Normal)
         {
             SetPlayerMode(PlayerMode.Normal);
         }
@@ -120,5 +120,22 @@ public class GameManager : MonoBehaviour
     {
         Debug.Log($"[GameManager] GAME OVER - Survived {currentDay} days!");
         SetGameState(GameState.GameOver);
+    }
+
+    public void RegisterNPC(NPCController npc)
+    {
+        if (!npcs.Contains(npc)) npcs.Add(npc);
+    }
+
+    public void UnregisterNPC(NPCController npc)
+    {
+        if (npcs.Contains(npc))
+        {
+            npcs.Remove(npc);
+            if (npcs.Count == 0 && currentGameState != GameState.GameOver)
+            {
+                TriggerGameOver();
+            }
+        }
     }
 }

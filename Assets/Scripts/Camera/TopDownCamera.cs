@@ -65,9 +65,7 @@ public class TopDownCamera : MonoBehaviour
             targetPos -= (transform.right * d.x + transform.up * d.y) * panSpeed * hf * Time.deltaTime;
         }
 
-        // WASD movement (disabled in combat mode)
-        bool combatMode = GameManager.Instance != null && GameManager.Instance.CurrentPlayerMode == PlayerMode.Combat;
-        if (!combatMode)
+        // WASD movement
         {
             float h = Input.GetAxisRaw("Horizontal");
             float v = Input.GetAxisRaw("Vertical");

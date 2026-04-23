@@ -31,8 +31,5 @@ public enum PlayerMode
     Normal,
     
     /// <summary>建築モード（ブロック設置）</summary>
-    Building,
-    
-    /// <summary>戦闘モード（夜間WASD移動）</summary>
-    Combat
+    Building
 }
