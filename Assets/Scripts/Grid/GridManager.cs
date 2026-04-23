@@ -49,7 +49,17 @@ public class GridManager : MonoBehaviour
     public bool CanPlace(Vector2Int gp)
     {
         if (!IsValidPosition(gp)) return false;
-        return cells[gp.x, gp.y].State == CellState.Empty;
+        if (cells[gp.x, gp.y].State != CellState.Empty) return false;
+
+        // プレイヤーが立っているセルには設置不可
+        GameObject player = GameObject.FindWithTag("Player");
+        if (player != null)
+        {
+            Vector2Int playerGridPos = WorldToGrid(player.transform.position);
+            if (playerGridPos == gp) return false;
+        }
+
+        return true;
     }
 
     public bool PlaceObject(Vector2Int gp, GameObject obj, bool blockWalking = true)

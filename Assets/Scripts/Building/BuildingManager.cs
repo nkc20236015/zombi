@@ -75,7 +75,27 @@ public class BuildingManager : MonoBehaviour
     {
         Vector3 wp = grid.GridToWorld(curGridPos);
         GameObject block = Instantiate(blockPrefabs[selectedBlockIndex], wp, Quaternion.identity);
-        if (!grid.PlaceObject(curGridPos, block)) Destroy(block);
+        if (!grid.PlaceObject(curGridPos, block))
+        {
+            Destroy(block);
+            return;
+        }
+
+        // NavMeshObstacleを追加してプレイヤーの通り抜けを防止
+        if (block.GetComponent<UnityEngine.AI.NavMeshObstacle>() == null)
+        {
+            var obstacle = block.AddComponent<UnityEngine.AI.NavMeshObstacle>();
+            obstacle.carving = true;
+            obstacle.carveOnlyStationary = true;
+            obstacle.shape = UnityEngine.AI.NavMeshObstacleShape.Box;
+            // ブロックのコライダーに合わせたサイズ
+            var col = block.GetComponent<BoxCollider>();
+            if (col != null)
+            {
+                obstacle.center = col.center;
+                obstacle.size = col.size;
+            }
+        }
     }
 
     void RemoveBlock()

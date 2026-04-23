@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Rendering;
 
 [RequireComponent(typeof(GridManager))]
 public class GridVisualizer : MonoBehaviour
@@ -36,6 +37,17 @@ public class GridVisualizer : MonoBehaviour
             GameManager.Instance.OnPlayerModeChanged += OnModeChanged;
     }
 
+    void OnEnable()
+    {
+        // URPではOnRenderObjectが呼ばれないため、endCameraRenderingを使用
+        RenderPipelineManager.endCameraRendering += OnEndCameraRendering;
+    }
+
+    void OnDisable()
+    {
+        RenderPipelineManager.endCameraRendering -= OnEndCameraRendering;
+    }
+
     void OnDestroy()
     {
         if (GameManager.Instance != null)
@@ -69,7 +81,27 @@ public class GridVisualizer : MonoBehaviour
         lineMaterial.SetInt("_ZWrite", 0);
     }
 
+    /// <summary>
+    /// URP対応: endCameraRenderingコールバックでGL描画
+    /// </summary>
+    void OnEndCameraRendering(ScriptableRenderContext context, Camera camera)
+    {
+        // GameViewのメインカメラのみ描画
+        if (camera != Camera.main) return;
+        DrawGrid();
+    }
+
+    /// <summary>
+    /// Built-in RP用フォールバック
+    /// </summary>
     void OnRenderObject()
+    {
+        // URPではendCameraRenderingが呼ばれるので、BuiltIn RP時のフォールバック
+        if (GraphicsSettings.currentRenderPipeline != null) return;
+        DrawGrid();
+    }
+
+    void DrawGrid()
     {
         if (!gridVisible || lineMaterial == null || gridManager == null) return;
         lineMaterial.SetPass(0);
@@ -82,12 +114,14 @@ public class GridVisualizer : MonoBehaviour
         GL.PushMatrix();
         GL.MultMatrix(Matrix4x4.identity);
 
+        // グリッド線
         GL.Begin(GL.LINES);
         GL.Color(gridLineColor);
         for (int x = 0; x <= w; x++) { float xp = o.x + x * cs; GL.Vertex3(xp, y, o.z); GL.Vertex3(xp, y, o.z + h * cs); }
         for (int z = 0; z <= h; z++) { float zp = o.z + z * cs; GL.Vertex3(o.x, y, zp); GL.Vertex3(o.x + w * cs, y, zp); }
         GL.End();
 
+        // 外枠
         GL.Begin(GL.LINES);
         GL.Color(gridBorderColor);
         float x0 = o.x, x1 = o.x + w * cs, z0 = o.z, z1 = o.z + h * cs;
@@ -97,9 +131,11 @@ public class GridVisualizer : MonoBehaviour
         GL.Vertex3(x1, y, z0); GL.Vertex3(x1, y, z1);
         GL.End();
 
+        // ホバーセル
         if (hoveredCell.x >= 0 && hoveredCell.y >= 0)
             DrawCellQuad(hoveredCell, hoveredCellValid ? hoverValidColor : hoverInvalidColor, y + 0.01f);
 
+        // 占有セル
         if (showOccupiedCells)
         {
             for (int x = 0; x < w; x++)
