@@ -26,7 +26,7 @@ RenderSettings:
   m_AmbientIntensity: 1.2
   m_AmbientMode: 3
   m_SubtractiveShadowColor: {r: 0.42, g: 0.478, b: 0.627, a: 1}
-  m_SkyboxMaterial: {fileID: 0}
+  m_SkyboxMaterial: {fileID: 2100000, guid: 01f4eb1c73693428d923f1520032e7f9, type: 2}
   m_HaloStrength: 0.5
   m_FlareStrength: 1
   m_FlareFadeSpeed: 3
@@ -93,7 +93,7 @@ LightmapSettings:
     m_ExportTrainingData: 0
     m_TrainingDataDestination: TrainingData
     m_LightProbeSampleCountMultiplier: 4
-  m_LightingDataAsset: {fileID: 20201, guid: 0000000000000000f000000000000000, type: 0}
+  m_LightingDataAsset: {fileID: 112000000, guid: b79e4db117cedae449cbb27631fe66da, type: 2}
   m_LightingSettings: {fileID: 0}
 --- !u!196 &4
 NavMeshSettings:
@@ -428,6 +428,7 @@ GameObject:
   - component: {fileID: 685504451}
   - component: {fileID: 685504454}
   - component: {fileID: 685504453}
+  - component: {fileID: 685504455}
   m_Layer: 0
   m_Name: GameManager
   m_TagString: Untagged
@@ -495,6 +496,25 @@ MonoBehaviour:
   npcLayer:
     serializedVersion: 2
     m_Bits: 4294967295
+--- !u!114 &685504455
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 685504450}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fdcd097b4d9666c4f9bb70f2216fe9af, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  morningSkybox: {fileID: 2100000, guid: 2d796ced94d61438fbab81b194038162, type: 2}
+  eveningSkybox: {fileID: 2100000, guid: b4f152e0498484391a9f0d5a1facf03b, type: 2}
+  nightSkybox: {fileID: 2100000, guid: 9af23ba5fa5364ff598888460e0e2759, type: 2}
+  morningDurationMin: 3
+  dayDurationMin: 5
+  eveningDurationMin: 3
+  nightDurationMin: 8
 --- !u!1 &1039491011
 GameObject:
   m_ObjectHideFlags: 0
