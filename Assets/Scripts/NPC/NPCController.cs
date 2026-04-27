@@ -15,7 +15,7 @@ public class NPCController : MonoBehaviour
     private Renderer[] modelRenderers;
     private Material[][] originalMaterials;
     private Material[][] ghostMaterials;
-    private Material[][] selectionMaterials;
+    private GameObject selectionRing;
 
     void Awake()
     {
@@ -25,6 +25,7 @@ public class NPCController : MonoBehaviour
     void Start()
     {
         CacheRenderers();
+        CreateSelectionRing();
 
         if (GameManager.Instance != null)
         {
@@ -96,14 +97,15 @@ public class NPCController : MonoBehaviour
             {
                 modelRenderers[i].materials = ghostMaterials[i];
             }
-            else if (IsSelected)
-            {
-                modelRenderers[i].materials = selectionMaterials[i];
-            }
             else
             {
                 modelRenderers[i].materials = originalMaterials[i];
             }
+        }
+
+        if (selectionRing != null)
+        {
+            selectionRing.SetActive(IsSelected && !isGhost);
         }
     }
 
@@ -112,7 +114,6 @@ public class NPCController : MonoBehaviour
         modelRenderers = GetComponentsInChildren<Renderer>();
         originalMaterials = new Material[modelRenderers.Length][];
         ghostMaterials = new Material[modelRenderers.Length][];
-        selectionMaterials = new Material[modelRenderers.Length][];
 
         for (int i = 0; i < modelRenderers.Length; i++)
         {
@@ -120,7 +121,6 @@ public class NPCController : MonoBehaviour
             originalMaterials[i] = origMats;
 
             Material[] ghosts = new Material[origMats.Length];
-            Material[] selections = new Material[origMats.Length];
             
             for (int j = 0; j < origMats.Length; j++)
             {
@@ -146,23 +146,38 @@ public class NPCController : MonoBehaviour
                     ghost.color = c;
                 }
                 ghosts[j] = ghost;
-
-                // 選択時マテリアル
-                Material sel = new Material(origMats[j]);
-                if (sel.HasProperty("_BaseColor"))
-                {
-                    Color baseC = sel.GetColor("_BaseColor");
-                    sel.SetColor("_BaseColor", baseC * selectionColor);
-                }
-                else if (sel.HasProperty("_Color"))
-                {
-                    sel.color = sel.color * selectionColor;
-                }
-                selections[j] = sel;
             }
             ghostMaterials[i] = ghosts;
-            selectionMaterials[i] = selections;
         }
+    }
+
+    private void CreateSelectionRing()
+    {
+        selectionRing = new GameObject("SelectionRing");
+        selectionRing.transform.SetParent(transform);
+        selectionRing.transform.localPosition = new Vector3(0, 0.05f, 0); // 地面から少しだけ浮かす
+        selectionRing.transform.localRotation = Quaternion.Euler(90, 0, 0);
+        
+        var line = selectionRing.AddComponent<LineRenderer>();
+        line.useWorldSpace = false;
+        line.startWidth = 0.05f;
+        line.endWidth = 0.05f;
+        line.positionCount = 31;
+        line.loop = true;
+        
+        // スプライト用のデフォルトマテリアルを利用して緑の円を描く
+        line.material = new Material(Shader.Find("Sprites/Default"));
+        line.startColor = selectionColor;
+        line.endColor = selectionColor;
+
+        float radius = 0.6f;
+        for (int i = 0; i <= 30; i++)
+        {
+            float angle = i * Mathf.PI * 2 / 30f;
+            line.SetPosition(i, new Vector3(Mathf.Cos(angle) * radius, Mathf.Sin(angle) * radius, 0));
+        }
+
+        selectionRing.SetActive(false);
     }
 
 

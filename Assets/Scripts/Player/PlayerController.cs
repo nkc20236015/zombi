@@ -16,7 +16,6 @@ public class PlayerController : MonoBehaviour
 
     [Header("WASD Movement (Nighttime)")]
     [SerializeField] private float wasdMoveSpeed = 6f;
-    [SerializeField] private float rotationSpeed = 10f;
 
     [Header("Visual")]
     [SerializeField] private float modelRotationSmooth = 10f;
@@ -69,9 +68,6 @@ public class PlayerController : MonoBehaviour
         {
             case PlayerMode.Normal:
                 HandleClickMovement();
-                break;
-            case PlayerMode.Combat:
-                HandleWASDMovement();
                 break;
             case PlayerMode.Building:
                 // 建築モード中はプレイヤー操作を無効化
@@ -156,11 +152,6 @@ public class PlayerController : MonoBehaviour
                 if (agent.isOnNavMesh) agent.ResetPath();
                 agent.enabled = false;
                 SetGhostMode(true);
-                break;
-            case PlayerMode.Combat:
-                if (agent.isOnNavMesh) agent.ResetPath();
-                agent.enabled = false;
-                SetGhostMode(false);
                 break;
         }
     }

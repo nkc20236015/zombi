@@ -83,16 +83,10 @@ public class GameManager : MonoBehaviour
     }
 
     /// <summary>
-    /// 建築モードをトグルする（昼間のみ可能）
+    /// 建築モードをトグルする
     /// </summary>
     public void ToggleBuildMode()
     {
-        if (!IsDaytime)
-        {
-            Debug.Log("[GameManager] Cannot enter build mode during night!");
-            return;
-        }
-
         if (currentPlayerMode == PlayerMode.Building)
         {
             SetPlayerMode(PlayerMode.Normal);

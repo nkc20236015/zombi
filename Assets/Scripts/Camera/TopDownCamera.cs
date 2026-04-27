@@ -5,7 +5,6 @@ public class TopDownCamera : MonoBehaviour
     [Header("Movement")]
     [SerializeField] private float moveSpeed = 20f;
     [SerializeField] private float fastMoveMultiplier = 3f;
-    [SerializeField] private float panSpeed = 0.5f;
     [Header("Rotation")]
     [SerializeField] private float rotationSpeed = 3f;
     [Header("Zoom")]
@@ -40,13 +39,11 @@ public class TopDownCamera : MonoBehaviour
     void Update()
     {
         // Mouse buttons
-        if (Input.GetMouseButtonDown(1)) { rmb = true; lastMouse = Input.mousePosition; }
-        if (Input.GetMouseButtonUp(1)) rmb = false;
         if (Input.GetMouseButtonDown(2)) { mmb = true; lastMouse = Input.mousePosition; }
         if (Input.GetMouseButtonUp(2)) mmb = false;
 
-        // Right-click rotate
-        if (rmb)
+        // Middle-click rotate (Going Medieval style)
+        if (mmb)
         {
             Vector3 d = Input.mousePosition - lastMouse;
             lastMouse = Input.mousePosition;
@@ -54,15 +51,6 @@ public class TopDownCamera : MonoBehaviour
             rotX -= d.y * rotationSpeed * 0.1f;
             rotX = Mathf.Clamp(rotX, 10f, 89f);
             transform.rotation = Quaternion.Euler(rotX, rotY, 0f);
-        }
-
-        // Middle-click pan
-        if (mmb)
-        {
-            Vector3 d = Input.mousePosition - lastMouse;
-            lastMouse = Input.mousePosition;
-            float hf = Mathf.Max(1f, transform.position.y * 0.05f);
-            targetPos -= (transform.right * d.x + transform.up * d.y) * panSpeed * hf * Time.deltaTime;
         }
 
         // WASD movement
