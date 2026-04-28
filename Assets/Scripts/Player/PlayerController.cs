@@ -229,4 +229,8 @@ public class PlayerController : MonoBehaviour
             moveIndicator.SetActive(false);
         }
     }
+
+    // Animation Event Receivers
+    public void FootR() { }
+    public void FootL() { }
 }

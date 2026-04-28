@@ -8,26 +8,27 @@
 ## 📅 現在の開発フェーズ
 **現在: Phase 2 （資源システムと採取機能）に進む直前**
 
-## ✅ 完了済みの実装 (Phase 1まで & UI改修)
+## ✅ 完了済みの実装 (Phase 1まで & UI/ビジュアル改修)
 *   **NPC指揮システムの基盤:** RTSスタイルでNPCを動かす基盤が動作中。
-    *   **操作体系:** 右クリックでNPC移動指示、中ボタンドラッグでカメラ回転、WASDでパン（Going Medievalスタイル）。
-    *   **選択UI:** NPC選択時は足元に緑色のサークル（LineRenderer）を表示。
+    *   **操作体系:** 右クリックでNPC移動指示、中ボタンドラッグでカメラ回転、WASDでパン。
+    *   **選択UIとマーカー:** NPC選択時は足元に緑色のサークル（LineRenderer）＋カスタムシェーダーによるアウトラインを表示。右クリック移動時には指定座標にマーカープレハブを表示。
+*   **NPCアニメーション (`NPCAnimationController.cs`):**
+    *   `ExplosiveLLC` (Crafting Mecanim Animation Pack FREE) のIdle / Walkアニメーションを適用。
+    *   NavMeshAgentの速度に合わせた自動再生。
+    *   将来の資源採取・攻撃用に `PlayAction(int type)` メソッドなどの拡張ポイントを実装済み。
 *   **昼夜サイクルシステム (`TimeManager.cs`):** 
-    *   朝(3分)、昼(5分)、夕方(2分)、夜(8分)のサイクル。
-    *   RenderSettings.skyboxとDirectional Lightの滑らかな切り替え。
+    *   朝(3分)、昼(5分)、夕方(2分)、夜(8分)のサイクルと空・光源の切り替え。
 *   **HUD UI (`HUDManager.cs` & Layout):**
-    *   Going Medieval風の四隅に配置するモジュラーレイアウトに刷新（TopRightPanelに時間、その他はプレースホルダ）。
-    *   テキスト変更時にDOTweenでアニメーション。
+    *   Going Medieval風の四隅に配置するモジュラーレイアウトに刷新。
 
 ## 🚀 次のステップ (Phase 2)
 1.  **資源の概念の追加:** 木材、石、食料などのリソースシステムを作成（`ResourceManager`）。
-2.  **UIのアップデート:** 画面右端に用意したプレースホルダ領域(`RightPanel`)に各資源の所持量を表示する。
-3.  **NPCの採取アクション:** NPCに木を伐採させるなどの指示（タスク）を出せるようにする。
+2.  **UIのアップデート:** 画面右端のプレースホルダ領域(`RightPanel`)に各資源の所持量を表示する。
+3.  **NPCの採取アクション:** NPCに木を伐採させるなどの指示（タスク）を出せるようにし、`NPCAnimationController` を使って採取アニメーションを再生する。
 
 ## 📝 開発上の注意点
-*   **Gitのルートフォルダ:** 実際のプロジェクトルートは `C:\Users\root\Documents\zombi` です（`zombi/zombi` ではありません）。
-*   **PlayerControllerについて:** 以前のアクションゲーム用の `PlayerController.cs` は非推奨となり、RTS用に `NPCController.cs` への移行を進めています（関連するコンパイルエラーは修正済み）。
-*   **UIについて:** HUDのアニメーションには `DG.Tweening` (DOTween)、テキストには `TextMeshPro` を使用しています。
+*   **Gitのルートフォルダ:** 実際のプロジェクトルートは `C:\Users\root\Documents\zombi` です。
+*   **アニメーションイベント:** アセットのアニメーションに付与されている足音等のイベント（`FootR`, `FootL`）は、警告を防ぐために各Controller内に空メソッドとして定義済みです。
 
 ---
-*Last Updated: Phase 1完了時*
+*Last Updated: 2026-04-28 (マーカー・アニメーション実装完了時)*

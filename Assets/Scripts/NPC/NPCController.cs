@@ -17,9 +17,20 @@ public class NPCController : MonoBehaviour
     private Material[][] ghostMaterials;
     private GameObject selectionRing;
 
+    [Header("Movement Marker")]
+    [SerializeField] private GameObject targetMarkerPrefab;
+    private GameObject targetMarkerInstance;
+
     void Awake()
     {
         agent = GetComponent<NavMeshAgent>();
+
+#if UNITY_EDITOR
+        if (targetMarkerPrefab == null)
+        {
+            targetMarkerPrefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Hovl Studio/Map track markers VFX/Prefabs/Marker 6 Arrows Loop.prefab");
+        }
+#endif
     }
 
     void Start()
@@ -54,6 +65,10 @@ public class NPCController : MonoBehaviour
                 if (!agent.hasPath || agent.velocity.sqrMagnitude == 0f)
                 {
                     CurrentState = NPCState.Idle;
+                    if (targetMarkerInstance != null)
+                    {
+                        targetMarkerInstance.SetActive(false);
+                    }
                 }
             }
         }
@@ -66,6 +81,16 @@ public class NPCController : MonoBehaviour
             agent.isStopped = false;
             agent.SetDestination(destination);
             CurrentState = NPCState.Moving;
+
+            if (targetMarkerPrefab != null)
+            {
+                if (targetMarkerInstance == null)
+                {
+                    targetMarkerInstance = Instantiate(targetMarkerPrefab);
+                }
+                targetMarkerInstance.transform.position = destination;
+                targetMarkerInstance.SetActive(true);
+            }
         }
     }
 
@@ -85,21 +110,29 @@ public class NPCController : MonoBehaviour
         UpdateVisuals();
     }
 
+    private Material outlineMaterial;
+
     private void UpdateVisuals()
     {
         if (modelRenderers == null) return;
         
         bool isGhost = GameManager.Instance != null && GameManager.Instance.CurrentPlayerMode == PlayerMode.Building;
+        bool shouldOutline = IsSelected && !isGhost;
         
         for (int i = 0; i < modelRenderers.Length; i++)
         {
-            if (isGhost)
+            Material[] baseMats = isGhost ? ghostMaterials[i] : originalMaterials[i];
+            
+            if (shouldOutline && outlineMaterial != null)
             {
-                modelRenderers[i].materials = ghostMaterials[i];
+                Material[] newMats = new Material[baseMats.Length + 1];
+                for (int j = 0; j < baseMats.Length; j++) newMats[j] = baseMats[j];
+                newMats[baseMats.Length] = outlineMaterial;
+                modelRenderers[i].materials = newMats;
             }
             else
             {
-                modelRenderers[i].materials = originalMaterials[i];
+                modelRenderers[i].materials = baseMats;
             }
         }
 
@@ -114,6 +147,14 @@ public class NPCController : MonoBehaviour
         modelRenderers = GetComponentsInChildren<Renderer>();
         originalMaterials = new Material[modelRenderers.Length][];
         ghostMaterials = new Material[modelRenderers.Length][];
+
+        Shader outlineShader = Shader.Find("Custom/Outline");
+        if (outlineShader != null)
+        {
+            outlineMaterial = new Material(outlineShader);
+            outlineMaterial.SetColor("_OutlineColor", selectionColor);
+            outlineMaterial.SetFloat("_OutlineWidth", 0.015f);
+        }
 
         for (int i = 0; i < modelRenderers.Length; i++)
         {
