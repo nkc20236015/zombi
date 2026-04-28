@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: 9409efb72db4ae648976d994aea822fd
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 36545
+  packageName: Crafting Mecanim Animation Pack
+  packageVersion: 4.0.1
+  assetPath: Assets/ExplosiveLLC/Crafting Mecanim Animation Pack/Code/CrafterAnimatorTriggers.cs
+  uploadId: 758063
