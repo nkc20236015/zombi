@@ -141,7 +141,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2001060122578762586, guid: f9c11c212145f9a4cb4c2e3cd4fc08ae, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 25
+      value: 27.453
       objectReference: {fileID: 0}
     - target: {fileID: 2001060122578762586, guid: f9c11c212145f9a4cb4c2e3cd4fc08ae, type: 3}
       propertyPath: m_LocalRotation.w
@@ -173,8 +173,12 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5558881479296835872, guid: f9c11c212145f9a4cb4c2e3cd4fc08ae, type: 3}
       propertyPath: m_ApplyRootMotion
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 5655922455167603853, guid: f9c11c212145f9a4cb4c2e3cd4fc08ae, type: 3}
+      propertyPath: targetMarkerPrefab
+      value: 
+      objectReference: {fileID: 1776351021293822, guid: 9cd87a8bf36ec8740a371061b7fab19a, type: 3}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -2351,8 +2355,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   axePrefab: {fileID: 6618725628355234377, guid: 42ac2a24f3ee58448916f745ce79c5ee, type: 3}
   pickaxePrefab: {fileID: 3480242447457170110, guid: 50b22ccaac98e6c479eac2e36f6968d8, type: 3}
-  holdPositionOffset: {x: 0, y: 0.1, z: 0}
-  holdRotationOffset: {x: 0, y: 90, z: 90}
+  holdPositionOffset: {x: 0, y: 0, z: 0}
+  holdRotationOffset: {x: -100, y: 90, z: 90}
 --- !u!1 &1728766299
 GameObject:
   m_ObjectHideFlags: 0

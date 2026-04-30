@@ -14658,7 +14658,7 @@ GameObject:
   - component: {fileID: 198168789432257936}
   - component: {fileID: 199506516929371396}
   m_Layer: 0
-  m_Name: Marker 6 Arrows Loop
+  m_Name: "\u30DE\u30FC\u30AB\u30FC"
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
