@@ -45,19 +45,19 @@ public class HUDManager : MonoBehaviour
             switch (state)
             {
                 case GameState.Dawn: 
-                    newText = "Phase: 朝 (Dawn)"; 
+                    newText = "朝"; 
                     newColor = new Color(1f, 0.8f, 0.5f); 
                     break;
                 case GameState.Daytime: 
-                    newText = "Phase: 昼 (Daytime)"; 
+                    newText = "昼"; 
                     newColor = Color.white; 
                     break;
                 case GameState.Evening: 
-                    newText = "Phase: 夕方 (Evening)"; 
+                    newText = "夕方"; 
                     newColor = new Color(1f, 0.5f, 0.3f); 
                     break;
                 case GameState.Night: 
-                    newText = "Phase: 夜 (Night)"; 
+                    newText = "夜"; 
                     newColor = new Color(0.5f, 0.5f, 1f); 
                     break;
                 default: 
@@ -79,8 +79,8 @@ public class HUDManager : MonoBehaviour
     {
         if (dayText != null)
         {
-            dayText.text = "Day " + day;
-            
+            dayText.text = day + "日目";
+
             // DOTween アニメーション
             dayText.transform.DOKill(true);
             dayText.transform.DOPunchScale(Vector3.one * 0.3f, 0.5f, 5, 1f);
