@@ -8,6 +8,9 @@ public class NPCController : MonoBehaviour
     [SerializeField] private float buildModeAlpha = 0.3f;
     [SerializeField] private Color selectionColor = new Color(0.5f, 1f, 0.5f, 1f);
 
+    [Header("Gathering Settings")]
+    [SerializeField] private float gatherInterval = 2.0f; // 採取アニメーション間隔（秒）
+
     public NPCState CurrentState { get; private set; } = NPCState.Idle;
     public bool IsSelected { get; private set; }
 
@@ -16,14 +19,22 @@ public class NPCController : MonoBehaviour
     private Material[][] originalMaterials;
     private Material[][] ghostMaterials;
     private GameObject selectionRing;
+    private NPCAnimationController animController;
+    private NPCToolHolder toolHolder;
 
     [Header("Movement Marker")]
     [SerializeField] private GameObject targetMarkerPrefab;
     private GameObject targetMarkerInstance;
 
+    // 採取関連
+    private ResourceNode targetNode;
+    private float gatherTimer;
+
     void Awake()
     {
         agent = GetComponent<NavMeshAgent>();
+        animController = GetComponent<NPCAnimationController>();
+        toolHolder = GetComponent<NPCToolHolder>();
 
 #if UNITY_EDITOR
         if (targetMarkerPrefab == null)
@@ -57,41 +68,120 @@ public class NPCController : MonoBehaviour
 
     void Update()
     {
-        // Simple state machine update
-        if (CurrentState == NPCState.Moving)
+        switch (CurrentState)
         {
-            if (!agent.pathPending && agent.remainingDistance <= agent.stoppingDistance)
+            case NPCState.Moving:
+                UpdateMovingState();
+                break;
+            case NPCState.MovingToResource:
+                UpdateMovingToResourceState();
+                break;
+            case NPCState.Gathering:
+                UpdateGatheringState();
+                break;
+        }
+    }
+
+    // ==================== State Updates ====================
+
+    private void UpdateMovingState()
+    {
+        if (!agent.pathPending && agent.remainingDistance <= agent.stoppingDistance)
+        {
+            if (!agent.hasPath || agent.velocity.sqrMagnitude == 0f)
             {
-                if (!agent.hasPath || agent.velocity.sqrMagnitude == 0f)
-                {
-                    CurrentState = NPCState.Idle;
-                    if (targetMarkerInstance != null)
-                    {
-                        targetMarkerInstance.SetActive(false);
-                    }
-                }
+                SetState(NPCState.Idle);
+                HideMarker();
             }
         }
     }
+
+    private void UpdateMovingToResourceState()
+    {
+        if (targetNode == null || !targetNode.HasResources)
+        {
+            // ターゲットが消失・枯渇した場合
+            StopGathering();
+            return;
+        }
+
+        if (!agent.pathPending && agent.remainingDistance <= agent.stoppingDistance + 0.5f)
+        {
+            if (!agent.hasPath || agent.velocity.sqrMagnitude == 0f)
+            {
+                // 資源ノードに到着 → 採取開始
+                StartGatheringAction();
+            }
+        }
+    }
+
+    private void UpdateGatheringState()
+    {
+        if (targetNode == null || !targetNode.HasResources)
+        {
+            // 資源が枯渇した
+            StopGathering();
+            return;
+        }
+
+        gatherTimer -= Time.deltaTime;
+        if (gatherTimer <= 0f)
+        {
+            // 採取を1回実行
+            int harvested = targetNode.Harvest();
+            if (harvested > 0 && ResourceManager.Instance != null)
+            {
+                ResourceManager.Instance.AddResource(targetNode.Type, harvested);
+            }
+
+            // 再度タイマーリセットしてアニメーション再生
+            if (targetNode != null && targetNode.HasResources)
+            {
+                gatherTimer = gatherInterval;
+                PlayGatherAnimation();
+            }
+            else
+            {
+                StopGathering();
+            }
+        }
+    }
+
+    // ==================== Public Commands ====================
 
     public void MoveTo(Vector3 destination)
     {
         if (agent.enabled && agent.isOnNavMesh)
         {
+            // 採取中だった場合は中断
+            StopGatheringImmediate();
+
             agent.isStopped = false;
             agent.SetDestination(destination);
-            CurrentState = NPCState.Moving;
-
-            if (targetMarkerPrefab != null)
-            {
-                if (targetMarkerInstance == null)
-                {
-                    targetMarkerInstance = Instantiate(targetMarkerPrefab);
-                }
-                targetMarkerInstance.transform.position = destination;
-                targetMarkerInstance.SetActive(true);
-            }
+            SetState(NPCState.Moving);
+            ShowMarker(destination);
         }
+    }
+
+    /// <summary>
+    /// 指定した ResourceNode に向かって移動し、到着後に採取を開始する。
+    /// </summary>
+    public void GatherResource(ResourceNode node)
+    {
+        if (node == null || !node.HasResources) return;
+        if (!agent.enabled || !agent.isOnNavMesh) return;
+
+        // 既に採取中なら中断
+        StopGatheringImmediate();
+
+        targetNode = node;
+
+        // ノードの近くに移動
+        Vector3 harvestPos = node.GetHarvestPosition(transform.position);
+        agent.isStopped = false;
+        agent.SetDestination(harvestPos);
+        SetState(NPCState.MovingToResource);
+        ShowMarker(harvestPos);
     }
 
     public void SetSelected(bool selected)
@@ -99,6 +189,113 @@ public class NPCController : MonoBehaviour
         IsSelected = selected;
         UpdateVisuals();
     }
+
+    // ==================== Gathering Helpers ====================
+
+    private void StartGatheringAction()
+    {
+        agent.isStopped = true;
+        HideMarker();
+        SetState(NPCState.Gathering);
+
+        // ノードの方を向く
+        if (targetNode != null)
+        {
+            Vector3 lookDir = (targetNode.transform.position - transform.position).normalized;
+            lookDir.y = 0;
+            if (lookDir != Vector3.zero)
+            {
+                transform.rotation = Quaternion.LookRotation(lookDir);
+            }
+
+            // ツールを手に表示
+            if (toolHolder != null)
+            {
+                toolHolder.ShowTool(targetNode.Type);
+            }
+        }
+
+        gatherTimer = 1.5f; // TakeItemアニメーション(1秒)を待ってから最初の採取
+        PlayGatherAnimation();
+    }
+
+    private void PlayGatherAnimation()
+    {
+        if (animController == null) return;
+
+        // ResourceType に応じてアクションタイプを切り替え
+        // 0 = Chop（伐採）, 1 = Mine（採掘）
+        int actionType = 0;
+        if (targetNode != null)
+        {
+            switch (targetNode.Type)
+            {
+                case ResourceType.Wood:
+                    actionType = 0; // Chop
+                    break;
+                case ResourceType.Stone:
+                    actionType = 1; // Mine
+                    break;
+                default:
+                    actionType = 0;
+                    break;
+            }
+        }
+        animController.PlayAction(actionType);
+    }
+
+    private void StopGathering()
+    {
+        targetNode = null;
+        agent.isStopped = true;
+        if (animController != null) animController.StopAction();
+
+        // ツールを非表示（PutItemアニメーション後に実際に消える）
+        if (toolHolder != null) toolHolder.HideTool();
+
+        SetState(NPCState.Idle);
+        HideMarker();
+    }
+
+    private void StopGatheringImmediate()
+    {
+        if (CurrentState == NPCState.Gathering || CurrentState == NPCState.MovingToResource)
+        {
+            targetNode = null;
+            if (animController != null) animController.StopAction();
+            if (toolHolder != null) toolHolder.HideTool();
+        }
+    }
+
+    // ==================== State & Marker Helpers ====================
+
+    private void SetState(NPCState newState)
+    {
+        CurrentState = newState;
+    }
+
+    private void ShowMarker(Vector3 position)
+    {
+        if (targetMarkerPrefab != null)
+        {
+            if (targetMarkerInstance == null)
+            {
+                targetMarkerInstance = Instantiate(targetMarkerPrefab);
+            }
+            targetMarkerInstance.transform.position = position;
+            targetMarkerInstance.SetActive(true);
+        }
+    }
+
+    private void HideMarker()
+    {
+        if (targetMarkerInstance != null)
+        {
+            targetMarkerInstance.SetActive(false);
+        }
+    }
+
+    // ==================== Mode & Visuals ====================
 
     private void OnPlayerModeChanged(PlayerMode mode)
     {
@@ -220,6 +417,4 @@ public class NPCController : MonoBehaviour
 
         selectionRing.SetActive(false);
     }
-
-
 }

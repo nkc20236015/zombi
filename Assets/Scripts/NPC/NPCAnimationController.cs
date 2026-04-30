@@ -12,7 +12,9 @@ public class NPCAnimationController : MonoBehaviour
     private readonly int isMovingHash = Animator.StringToHash("IsMoving");
     private readonly int velocityHash = Animator.StringToHash("Velocity");
     private readonly int actionTriggerHash = Animator.StringToHash("ActionTrigger");
-    private readonly int actionTypeHash = Animator.StringToHash("ActionType"); // e.g. 0=chop, 1=mine
+    private readonly int actionTypeHash = Animator.StringToHash("ActionType"); // 0=chop, 1=mine
+
+    private bool isPerformingAction;
 
     void Awake()
     {
@@ -29,14 +31,21 @@ public class NPCAnimationController : MonoBehaviour
         // Update animator parameters
         animator.SetBool(isMovingHash, isMoving);
         animator.SetFloat(velocityHash, speed);
+
+        // 移動開始したらアクションを中断
+        if (isMoving && isPerformingAction)
+        {
+            StopAction();
+        }
     }
 
     /// <summary>
-    /// Play a specific action animation (for future phases like chopping wood).
+    /// Play a specific action animation.
+    /// 0 = Chop (伐採), 1 = Mine (採掘)
     /// </summary>
-    /// <param name="actionType">The integer ID of the action to perform.</param>
     public void PlayAction(int actionType)
     {
+        isPerformingAction = true;
         animator.SetInteger(actionTypeHash, actionType);
         animator.SetTrigger(actionTriggerHash);
     }
@@ -46,10 +55,14 @@ public class NPCAnimationController : MonoBehaviour
     /// </summary>
     public void StopAction()
     {
+        isPerformingAction = false;
         animator.ResetTrigger(actionTriggerHash);
+        // ActionType を -1 にリセットすることで、Chop/Mine → Idle 遷移を発火
+        animator.SetInteger(actionTypeHash, -1);
     }
 
     // Animation Event Receivers
     public void FootR() { }
     public void FootL() { }
+    public void Hit() { } // Chop/Mine アニメーションのヒットイベント用
 }

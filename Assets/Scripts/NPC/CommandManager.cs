@@ -5,6 +5,7 @@ public class CommandManager : MonoBehaviour
     public static CommandManager Instance { get; private set; }
 
     [SerializeField] private LayerMask groundLayer;
+    [SerializeField] private LayerMask resourceLayer; // ResourceNode用のレイヤー
     private Camera mainCamera;
 
     void Awake()
@@ -35,26 +36,45 @@ public class CommandManager : MonoBehaviour
     private void HandleCommand()
     {
         Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
+
+        // まず ResourceNode を優先チェック
+        if (Physics.Raycast(ray, out RaycastHit resourceHit, 200f, resourceLayer))
+        {
+            ResourceNode node = resourceHit.collider.GetComponentInParent<ResourceNode>();
+            if (node != null && node.HasResources)
+            {
+                IssueGatherCommand(node);
+                Debug.Log($"Issued Gather Command to {SelectionManager.Instance.SelectedNPCs.Count} NPCs → {node.gameObject.name} ({node.Type})");
+                return;
+            }
+        }
         
-        // とりあえず地面への移動指示のみ（Phase 2）
+        // 地面への移動指示
         if (Physics.Raycast(ray, out RaycastHit hit, 200f, groundLayer))
         {
             IssueMoveCommand(hit.point);
-            
-            // 指示が出たことを示す視覚効果（後で追加）
             Debug.Log($"Issued Move Command to {SelectionManager.Instance.SelectedNPCs.Count} NPCs at {hit.point}");
         }
     }
 
     private void IssueMoveCommand(Vector3 targetPosition)
     {
-        // 複数人の場合、少しばらけさせるなどのフォーメーション処理を追加するとより良くなります
-        // とりあえず全員同じ場所を目指す
         foreach (var npc in SelectionManager.Instance.SelectedNPCs)
         {
             if (npc != null)
             {
                 npc.MoveTo(targetPosition);
+            }
+        }
+    }
+
+    private void IssueGatherCommand(ResourceNode node)
+    {
+        foreach (var npc in SelectionManager.Instance.SelectedNPCs)
+        {
+            if (npc != null)
+            {
+                npc.GatherResource(node);
             }
         }
     }

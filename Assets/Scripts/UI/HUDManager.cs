@@ -12,6 +12,11 @@ public class HUDManager : MonoBehaviour
     [SerializeField] private TextMeshProUGUI dayText;
     [SerializeField] private TextMeshProUGUI phaseText;
 
+    [Header("Resource UI")]
+    [SerializeField] private TextMeshProUGUI woodText;
+    [SerializeField] private TextMeshProUGUI stoneText;
+    [SerializeField] private TextMeshProUGUI foodText;
+
     private void Start()
     {
         if (GameManager.Instance != null)
@@ -24,6 +29,14 @@ public class HUDManager : MonoBehaviour
             UpdateDayUI(GameManager.Instance.CurrentDay);
             UpdatePhaseUI(GameManager.Instance.CurrentGameState);
         }
+
+        // ResourceManagerのイベントに登録
+        if (ResourceManager.Instance != null)
+        {
+            ResourceManager.Instance.OnResourceChanged += UpdateResourceUI;
+            // 初期値の反映
+            UpdateAllResourceUI();
+        }
     }
 
     private void OnDestroy()
@@ -33,7 +46,14 @@ public class HUDManager : MonoBehaviour
             GameManager.Instance.OnGameStateChanged -= UpdatePhaseUI;
             GameManager.Instance.OnNewDay -= UpdateDayUI;
         }
+
+        if (ResourceManager.Instance != null)
+        {
+            ResourceManager.Instance.OnResourceChanged -= UpdateResourceUI;
+        }
     }
+
+    // ==================== Phase / Day UI ====================
 
     private void UpdatePhaseUI(GameState state)
     {
@@ -85,5 +105,43 @@ public class HUDManager : MonoBehaviour
             dayText.transform.DOKill(true);
             dayText.transform.DOPunchScale(Vector3.one * 0.3f, 0.5f, 5, 1f);
         }
+    }
+
+    // ==================== Resource UI ====================
+
+    private void UpdateResourceUI(ResourceType type, int amount)
+    {
+        switch (type)
+        {
+            case ResourceType.Wood:
+                UpdateResourceText(woodText, "🪵", amount);
+                break;
+            case ResourceType.Stone:
+                UpdateResourceText(stoneText, "🪨", amount);
+                break;
+            case ResourceType.Food:
+                UpdateResourceText(foodText, "🍖", amount);
+                break;
+        }
+    }
+
+    private void UpdateResourceText(TextMeshProUGUI text, string icon, int amount)
+    {
+        if (text == null) return;
+
+        text.text = $"{icon} {amount}";
+
+        // ポップアニメーション
+        text.transform.DOKill(true);
+        text.transform.DOPunchScale(Vector3.one * 0.15f, 0.3f, 5, 1f);
+    }
+
+    private void UpdateAllResourceUI()
+    {
+        if (ResourceManager.Instance == null) return;
+
+        UpdateResourceUI(ResourceType.Wood, ResourceManager.Instance.GetResource(ResourceType.Wood));
+        UpdateResourceUI(ResourceType.Stone, ResourceManager.Instance.GetResource(ResourceType.Stone));
+        UpdateResourceUI(ResourceType.Food, ResourceManager.Instance.GetResource(ResourceType.Food));
     }
 }
