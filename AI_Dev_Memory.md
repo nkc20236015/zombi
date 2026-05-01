@@ -6,7 +6,7 @@
 ---
 
 ## 📅 現在の開発フェーズ
-**現在: Phase 2 （資源システムと採取機能）実装中 → 動作確認待ち**
+**現在: Phase 2 （資源システムと採取機能）→ UI・カメラ・操作性の改善中**
 
 ## ✅ 完了済みの実装 (Phase 1まで & UI/ビジュアル改修)
 *   **NPC指揮システムの基盤:** RTSスタイルでNPCを動かす基盤が動作中。
@@ -21,7 +21,7 @@
 *   **HUD UI (`HUDManager.cs` & Layout):**
     *   Going Medieval風の四隅に配置するモジュラーレイアウトに刷新。
 
-## 🔧 Phase 2 実装済み（動作確認待ち）
+## 🔧 Phase 2 実装済み
 *   **資源管理システム:**
     *   `ResourceType.cs` - Wood, Stone, Food の列挙型
     *   `ResourceManager.cs` - 資源の増減・イベント通知を管理するシングルトン（GameManagerオブジェクトにアタッチ済み）
@@ -32,6 +32,8 @@
     *   Animator Controllerに Chop(Chop-Vertical) と Mine(Dig-Scoop) ステートを追加
 *   **資源UI:**
     *   `HUDManager.cs` にWood/Stone/Foodの表示機能追加。TopLeftPanelに配置
+    *   テキストのみ表示（数字のみ）。アイコンはCainos Pixel Art Icon Pack からUI Imageで配置（ユーザーが手動設定）
+    *   アニメーション: 資源変化時にテキストが黄色くふわっと光るDOColor演出
 *   **シーン配置:**
     *   Spruce_008（木）× 5本、Rock × 3個をResourceNodesコンテナの下に配置
     *   Resourceレイヤー(9)設定済み、CapsuleCollider付き
@@ -42,22 +44,41 @@
     *   採掘アニメ: `Crafter@Dig-Scoop.FBX`
     *   取り出しアニメ: `Crafter@Item-Take.FBX`、しまうアニメ: `Crafter@Item-Putdown.FBX`
     *   道具モデル: `Veresen/BasicTools/Prefabs/axe.prefab`(斧), `pickaxe.prefab`(ピッケル)
+    *   UIアイコン: `Cainos/Pixel Art Icon Pack - RPG/Texture/`
 *   **NPCツールホルダー (`NPCToolHolder.cs`):**
     *   右手ボーン（Hand.R）にツールをインスタンス化して持たせる機能
     *   Animator: Idle → TakeItem → Chop/Mine(ループ) → PutItem → Idle のフロー
 
-## 🚀 次のステップ
-1.  **バグ修正:** 斧（ツール）がNPCの手から離れて表示される問題の修正（`NPCToolHolder`の `holdPositionOffset` / `holdRotationOffset` の再調整）
-2.  **動作確認:** プレイモードでNPC選択→木/岩を右クリック→取り出し→採取→しまうの一連を検証
-3.  **資源UIの改善:** アイコンやフォントの調整
+## 🔧 5/1 実装済み（カメラ・操作性改善）
+*   **カメラ追従 (`TopDownCamera.cs`):**
+    *   Fキーで選択中のNPCを追従開始（複数選択時は中心点を追従）
+    *   中ホイール回転は追従を維持したまま使用可能
+    *   WASD / スクロール / Q/E / Escで追従解除
+*   **採取中断の改善 (`NPCController.cs` + `NPCState.cs`):**
+    *   採取中に移動指示を出すと、ツールをしまう（PuttingAwayステート、2秒間）→ しまい終わったら移動開始
+    *   しまう途中に新しい指示が来た場合は目的地を上書き
+*   **カメラ遮蔽物の半透明化 (`CameraOccluder.cs`):** ← NEW（要テスト）
+    *   メインカメラにアタッチして使用
+    *   選択中NPCとカメラの間にある障害物（木など）を自動的に半透明化
+    *   カメラ自体が木に近づいた場合も周囲の木を半透明化（OverlapSphere方式、BoxCollider不要）
+    *   URP Litシェーダーの_Surface / _Blend / RenderQueueを動的に切り替え
+    *   カメラが離れると滑らかに元の不透明に戻る
 
-## 🐛 既知のバグ・課題 (次回修正)
-*   採取ツール（斧・ピッケル）が手から浮いている/離れている。スクショ確認後、オフセットを修正する。
+## 🚀 残りのタスク
+1.  **カメラ遮蔽物の半透明化テスト:** CameraOccluderをカメラにアタッチしてテスト
+2.  **採取UIパネル:** 採取対象を左クリック選択 → 「ここで採取する / キャンセル」のUIパネル表示
+3.  **NPC一覧UI:** 画面左にNPC一覧パネル（参考写真待ち）
+4.  **Phase 3:** 溜まった資源を用いた建築・消費システムの構築
+
+## 🐛 既知のバグ・課題
+*   （ツールの手からのズレは修正済み）
+*   CameraOccluder は未テスト。木のColliderが正しく設定されていないと透過しない可能性あり。
 
 ## 📝 開発上の注意点
 *   **Gitのルートフォルダ:** 実際のプロジェクトルートは `C:\Users\root\Documents\zombi` です。
 *   **アニメーションイベント:** アセットのアニメーションに付与されている足音等のイベント（`FootR`, `FootL`）は、警告を防ぐために各Controller内に空メソッドとして定義済みです。
 *   **レイヤー設定:** Resource = Layer 9
+*   **木のマテリアル:** URP Lit シェーダー (Surface=Opaque, Blend=0)。CameraOccluder で半透明化対応済み。
 
 ---
-*Last Updated: 2026-04-30 (Phase 2 資源システム実装完了)*
+*Last Updated: 2026-05-01 (カメラ追従・採取中断改善・遮蔽物半透明化)*

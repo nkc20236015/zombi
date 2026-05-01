@@ -30,6 +30,11 @@ public class NPCController : MonoBehaviour
     private ResourceNode targetNode;
     private float gatherTimer;
 
+    // ツール収納 → 移動のバッファ
+    private Vector3? pendingMoveDestination;     // 収納後に移動する先
+    private ResourceNode pendingGatherNode;      // 収納後に採取する先
+    private float putAwayTimer;
+
     void Awake()
     {
         agent = GetComponent<NavMeshAgent>();
@@ -78,6 +83,9 @@ public class NPCController : MonoBehaviour
                 break;
             case NPCState.Gathering:
                 UpdateGatheringState();
+                break;
+            case NPCState.PuttingAway:
+                UpdatePuttingAwayState();
                 break;
         }
     }
@@ -151,16 +159,34 @@ public class NPCController : MonoBehaviour
 
     public void MoveTo(Vector3 destination)
     {
-        if (agent.enabled && agent.isOnNavMesh)
-        {
-            // 採取中だった場合は中断
-            StopGatheringImmediate();
+        if (!agent.enabled || !agent.isOnNavMesh) return;
 
-            agent.isStopped = false;
-            agent.SetDestination(destination);
-            SetState(NPCState.Moving);
-            ShowMarker(destination);
+        // 採取中の場合 → ツールをしまってから移動する
+        if (CurrentState == NPCState.Gathering)
+        {
+            BeginPutAway(destination, null);
+            return;
         }
+
+        // PuttingAway中に新しい移動指示が来た場合 → 目的地だけ上書き
+        if (CurrentState == NPCState.PuttingAway)
+        {
+            pendingMoveDestination = destination;
+            pendingGatherNode = null;
+            ShowMarker(destination);
+            return;
+        }
+
+        // 通常の移動（MovingToResource中からの切替含む）
+        if (CurrentState == NPCState.MovingToResource)
+        {
+            targetNode = null;
+        }
+
+        agent.isStopped = false;
+        agent.SetDestination(destination);
+        SetState(NPCState.Moving);
+        ShowMarker(destination);
     }
 
     /// <summary>
@@ -171,12 +197,23 @@ public class NPCController : MonoBehaviour
         if (node == null || !node.HasResources) return;
         if (!agent.enabled || !agent.isOnNavMesh) return;
 
-        // 既に採取中なら中断
-        StopGatheringImmediate();
+        // 採取中の場合 → ツールをしまってから次の採取対象へ移動
+        if (CurrentState == NPCState.Gathering)
+        {
+            BeginPutAway(null, node);
+            return;
+        }
 
+        // PuttingAway中に新しい採取指示が来た場合 → 対象を上書き
+        if (CurrentState == NPCState.PuttingAway)
+        {
+            pendingMoveDestination = null;
+            pendingGatherNode = node;
+            return;
+        }
+
+        // 通常
         targetNode = node;
-
-        // ノードの近くに移動
         Vector3 harvestPos = node.GetHarvestPosition(transform.position);
         agent.isStopped = false;
         agent.SetDestination(harvestPos);
@@ -250,7 +287,7 @@ public class NPCController : MonoBehaviour
         agent.isStopped = true;
         if (animController != null) animController.StopAction();
 
-        // ツールを非表示（PutItemアニメーション後に実際に消える）
+        // ツールを非表示
         if (toolHolder != null) toolHolder.HideTool();
 
         SetState(NPCState.Idle);
@@ -264,6 +301,69 @@ public class NPCController : MonoBehaviour
             targetNode = null;
             if (animController != null) animController.StopAction();
             if (toolHolder != null) toolHolder.HideTool();
+        }
+    }
+
+    // ==================== PuttingAway (ツール収納) ====================
+
+    /// <summary>
+    /// 採取を中断し、ツールをしまうアニメーションを再生してから次の行動へ移る。
+    /// moveDestination と gatherNode のどちらか一方を指定する。
+    /// </summary>
+    private void BeginPutAway(Vector3? moveDestination, ResourceNode gatherNode)
+    {
+        // 採取アニメーションを停止
+        if (animController != null) animController.StopAction();
+
+        // ツールをしまう
+        if (toolHolder != null) toolHolder.HideTool();
+
+        targetNode = null;
+        agent.isStopped = true;
+
+        // 次の行動をバッファ
+        pendingMoveDestination = moveDestination;
+        pendingGatherNode = gatherNode;
+
+        if (moveDestination.HasValue)
+            ShowMarker(moveDestination.Value);
+
+        // PuttingAway ステートへ遷移（しまう時間を待つ）
+        putAwayTimer = 2.0f; // しまうアニメーションの長さに合わせる
+        SetState(NPCState.PuttingAway);
+    }
+
+    /// <summary>
+    /// PuttingAway ステートの更新。タイマーが切れたらバッファした行動を実行する。
+    /// </summary>
+    private void UpdatePuttingAwayState()
+    {
+        putAwayTimer -= Time.deltaTime;
+        if (putAwayTimer > 0f) return;
+
+        // タイマー完了 → バッファした行動を実行
+        SetState(NPCState.Idle); // 一旦Idleに戻す（再帰呼び出し対策）
+
+        if (pendingGatherNode != null && pendingGatherNode.HasResources)
+        {
+            ResourceNode node = pendingGatherNode;
+            pendingGatherNode = null;
+            pendingMoveDestination = null;
+            GatherResource(node);
+        }
+        else if (pendingMoveDestination.HasValue)
+        {
+            Vector3 dest = pendingMoveDestination.Value;
+            pendingMoveDestination = null;
+            pendingGatherNode = null;
+            MoveTo(dest);
+        }
+        else
+        {
+            // バッファなし → Idle
+            pendingMoveDestination = null;
+            pendingGatherNode = null;
+            HideMarker();
         }
     }
 

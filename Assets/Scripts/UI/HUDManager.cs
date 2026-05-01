@@ -88,9 +88,10 @@ public class HUDManager : MonoBehaviour
 
             phaseText.text = newText;
             
-            // DOTween アニメーション
-            phaseText.transform.DOKill(true); // 重複実行を防ぐためにリセット
-            phaseText.transform.DOPunchScale(Vector3.one * 0.2f, 0.5f, 5, 1f); // ポップする動き
+            // DOTween アニメーション (ふわっとしたポップ)
+            phaseText.transform.DOKill(true);
+            phaseText.transform.localScale = Vector3.one;
+            phaseText.transform.DOScale(1.1f, 0.2f).SetLoops(2, LoopType.Yoyo).SetEase(Ease.InOutSine);
             phaseText.DOColor(newColor, 1f); // 1秒かけて色を滑らかに変更
         }
     }
@@ -101,9 +102,10 @@ public class HUDManager : MonoBehaviour
         {
             dayText.text = day + "日目";
 
-            // DOTween アニメーション
+            // DOTween アニメーション (ふわっとしたポップ)
             dayText.transform.DOKill(true);
-            dayText.transform.DOPunchScale(Vector3.one * 0.3f, 0.5f, 5, 1f);
+            dayText.transform.localScale = Vector3.one;
+            dayText.transform.DOScale(1.1f, 0.2f).SetLoops(2, LoopType.Yoyo).SetEase(Ease.InOutSine);
         }
     }
 
@@ -114,26 +116,29 @@ public class HUDManager : MonoBehaviour
         switch (type)
         {
             case ResourceType.Wood:
-                UpdateResourceText(woodText, "🪵", amount);
+                UpdateResourceText(woodText, amount);
                 break;
             case ResourceType.Stone:
-                UpdateResourceText(stoneText, "🪨", amount);
+                UpdateResourceText(stoneText, amount);
                 break;
             case ResourceType.Food:
-                UpdateResourceText(foodText, "🍖", amount);
+                UpdateResourceText(foodText, amount);
                 break;
         }
     }
 
-    private void UpdateResourceText(TextMeshProUGUI text, string icon, int amount)
+    private void UpdateResourceText(TextMeshProUGUI text, int amount)
     {
         if (text == null) return;
 
-        text.text = $"{icon} {amount}";
+        text.text = amount.ToString();
 
-        // ポップアニメーション
-        text.transform.DOKill(true);
-        text.transform.DOPunchScale(Vector3.one * 0.15f, 0.3f, 5, 1f);
+        // 揺れ（スケール）を完全に無くし、色だけがふわっと光るアニメーションに変更
+        text.DOKill(true);
+        text.color = Color.white;
+        
+        // 少し黄色っぽく光って、元に戻る
+        text.DOColor(new Color(1f, 0.9f, 0.5f), 0.15f).SetLoops(2, LoopType.Yoyo);
     }
 
     private void UpdateAllResourceUI()
