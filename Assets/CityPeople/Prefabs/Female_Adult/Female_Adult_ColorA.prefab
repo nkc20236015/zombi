@@ -18,7 +18,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: de94720d5e30f1544b10af7ed5c7adc0, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 25
+      value: 27.453
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: de94720d5e30f1544b10af7ed5c7adc0, type: 3}
       propertyPath: m_LocalRotation.w
@@ -58,12 +58,16 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: de94720d5e30f1544b10af7ed5c7adc0, type: 3}
       propertyPath: m_TagString
-      value: Player
+      value: NPC
       objectReference: {fileID: 0}
     - target: {fileID: 5866666021909216657, guid: de94720d5e30f1544b10af7ed5c7adc0, type: 3}
       propertyPath: m_Controller
       value: 
       objectReference: {fileID: 9100000, guid: ee7056269bab03b4e8294a9ac3abea05, type: 2}
+    - target: {fileID: 5866666021909216657, guid: de94720d5e30f1544b10af7ed5c7adc0, type: 3}
+      propertyPath: m_ApplyRootMotion
+      value: 0
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -80,6 +84,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: de94720d5e30f1544b10af7ed5c7adc0, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1330198470171550026}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: de94720d5e30f1544b10af7ed5c7adc0, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 6666444716072192447}
   m_SourcePrefab: {fileID: 100100000, guid: de94720d5e30f1544b10af7ed5c7adc0, type: 3}
 --- !u!1 &1193138585393553888 stripped
 GameObject:
@@ -122,7 +129,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   buildModeAlpha: 0.3
   selectionColor: {r: 1, g: 1, b: 1, a: 1}
-  targetMarkerPrefab: {fileID: 0}
+  gatherInterval: 2
+  targetMarkerPrefab: {fileID: 1776351021293822, guid: 9cd87a8bf36ec8740a371061b7fab19a, type: 3}
 --- !u!136 &4492303932954280057
 CapsuleCollider:
   m_ObjectHideFlags: 0
@@ -158,3 +166,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 095ebf0f022c24a47982233b7657eee4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &6666444716072192447
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1193138585393553888}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cba4bf97cfc1a4f4ea7983b663f03785, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  axePrefab: {fileID: 6618725628355234377, guid: 42ac2a24f3ee58448916f745ce79c5ee, type: 3}
+  pickaxePrefab: {fileID: 3480242447457170110, guid: 50b22ccaac98e6c479eac2e36f6968d8, type: 3}
+  holdPositionOffset: {x: 0, y: 0, z: 0}
+  holdRotationOffset: {x: -100, y: 90, z: 90}

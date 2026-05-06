@@ -171,25 +171,18 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 5558881479296835872, guid: f9c11c212145f9a4cb4c2e3cd4fc08ae, type: 3}
-      propertyPath: m_Avatar
-      value: 
-      objectReference: {fileID: 9000000, guid: de94720d5e30f1544b10af7ed5c7adc0, type: 3}
-    - target: {fileID: 5558881479296835872, guid: f9c11c212145f9a4cb4c2e3cd4fc08ae, type: 3}
-      propertyPath: m_ApplyRootMotion
-      value: 0
+    - target: {fileID: 6666444716072192447, guid: f9c11c212145f9a4cb4c2e3cd4fc08ae, type: 3}
+      propertyPath: holdPositionOffset.y
+      value: 0.001
       objectReference: {fileID: 0}
-    - target: {fileID: 5655922455167603853, guid: f9c11c212145f9a4cb4c2e3cd4fc08ae, type: 3}
-      propertyPath: targetMarkerPrefab
-      value: 
-      objectReference: {fileID: 1776351021293822, guid: 9cd87a8bf36ec8740a371061b7fab19a, type: 3}
+    - target: {fileID: 6666444716072192447, guid: f9c11c212145f9a4cb4c2e3cd4fc08ae, type: 3}
+      propertyPath: holdPositionOffset.z
+      value: 0.0001
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents:
-    - targetCorrespondingSourceObject: {fileID: 1193138585393553888, guid: f9c11c212145f9a4cb4c2e3cd4fc08ae, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 1717991447}
+    m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: f9c11c212145f9a4cb4c2e3cd4fc08ae, type: 3}
 --- !u!1 &306868730
 GameObject:
@@ -347,13 +340,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 306868730}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.4226183, y: 0, z: 0, w: 0.9063078}
-  m_LocalPosition: {x: 25, y: 15, z: 10}
+  m_LocalRotation: {x: -0.102978095, y: 0.8970217, z: -0.30423594, w: -0.30362487}
+  m_LocalPosition: {x: 27, y: 3.9, z: 31.4}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 37.47, y: 217.4, z: 0}
 --- !u!114 &306868736
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -927,6 +920,11 @@ MonoBehaviour:
   maxAmount: 50
   harvestAmountPerAction: 5
   depletedScale: 0.3
+  shakeStrength: 2
+  shakeDuration: 0.4
+  fallDuration: 1.5
+  fallAngle: 85
+  disappearDelay: 1
 --- !u!136 &580166224
 CapsuleCollider:
   m_ObjectHideFlags: 0
@@ -1774,6 +1772,11 @@ MonoBehaviour:
   maxAmount: 50
   harvestAmountPerAction: 5
   depletedScale: 0.3
+  shakeStrength: 2
+  shakeDuration: 0.4
+  fallDuration: 1.5
+  fallAngle: 85
+  disappearDelay: 1
 --- !u!136 &780356622
 CapsuleCollider:
   m_ObjectHideFlags: 0
@@ -1906,6 +1909,11 @@ MonoBehaviour:
   maxAmount: 50
   harvestAmountPerAction: 5
   depletedScale: 0.3
+  shakeStrength: 2
+  shakeDuration: 0.4
+  fallDuration: 1.5
+  fallAngle: 85
+  disappearDelay: 1
 --- !u!136 &870110141
 CapsuleCollider:
   m_ObjectHideFlags: 0
@@ -2303,6 +2311,11 @@ MonoBehaviour:
   maxAmount: 50
   harvestAmountPerAction: 5
   depletedScale: 0.3
+  shakeStrength: 2
+  shakeDuration: 0.4
+  fallDuration: 1.5
+  fallAngle: 85
+  disappearDelay: 1
 --- !u!136 &1190071452
 CapsuleCollider:
   m_ObjectHideFlags: 0
@@ -2461,27 +2474,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &1717991440 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 1193138585393553888, guid: f9c11c212145f9a4cb4c2e3cd4fc08ae, type: 3}
-  m_PrefabInstance: {fileID: 256503294}
-  m_PrefabAsset: {fileID: 0}
---- !u!114 &1717991447
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1717991440}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: cba4bf97cfc1a4f4ea7983b663f03785, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  axePrefab: {fileID: 6618725628355234377, guid: 42ac2a24f3ee58448916f745ce79c5ee, type: 3}
-  pickaxePrefab: {fileID: 3480242447457170110, guid: 50b22ccaac98e6c479eac2e36f6968d8, type: 3}
-  holdPositionOffset: {x: 0, y: 0, z: 0}
-  holdRotationOffset: {x: -100, y: 90, z: 90}
 --- !u!1 &1728766299
 GameObject:
   m_ObjectHideFlags: 0

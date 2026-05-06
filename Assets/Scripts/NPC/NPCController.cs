@@ -281,6 +281,18 @@ public class NPCController : MonoBehaviour
         animController.PlayAction(actionType);
     }
 
+    /// <summary>
+    /// アニメーションのStrikeイベント（斧が当たった瞬間）を受けて、
+    /// 採取中の木を揺らす。NPCAnimationControllerから呼ばれる。
+    /// </summary>
+    public void OnStrikeHit()
+    {
+        if (CurrentState == NPCState.Gathering && targetNode != null)
+        {
+            targetNode.OnStrikeHit();
+        }
+    }
+
     private void StopGathering()
     {
         targetNode = null;

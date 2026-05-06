@@ -1,4 +1,5 @@
 using UnityEngine;
+using DG.Tweening;
 
 /// <summary>
 /// マップ上の採取可能なオブジェクト（木・岩など）にアタッチするスクリプト。
@@ -11,8 +12,15 @@ public class ResourceNode : MonoBehaviour
     [SerializeField] private int maxAmount = 50;
     [SerializeField] private int harvestAmountPerAction = 5; // 1回の採取で得られる量
 
-    [Header("Visual")]
+    [Header("Visual - 岩など（Wood以外）")]
     [SerializeField] private float depletedScale = 0.3f; // 枯渇時の縮小率
+
+    [Header("Visual - 木の伐採演出")]
+    [SerializeField] private float shakeStrength = 2f;     // 採取時の揺れの強さ（角度）
+    [SerializeField] private float shakeDuration = 0.4f;   // 揺れの持続時間
+    [SerializeField] private float fallDuration = 1.5f;    // 倒れるまでの時間
+    [SerializeField] private float fallAngle = 85f;        // 倒れる角度
+    [SerializeField] private float disappearDelay = 1.0f;  // 倒れた後に消えるまでの待機時間
 
     /// <summary>このノードの資源タイプ</summary>
     public ResourceType Type => resourceType;
@@ -30,11 +38,14 @@ public class ResourceNode : MonoBehaviour
     public float InteractionRange => 2.0f;
 
     private Vector3 originalScale;
+    private Quaternion originalRotation;
+    private bool isFalling = false; // 倒木中フラグ（二重実行防止）
 
     void Awake()
     {
         CurrentAmount = maxAmount;
         originalScale = transform.localScale;
+        originalRotation = transform.localRotation;
     }
 
     /// <summary>
@@ -48,6 +59,41 @@ public class ResourceNode : MonoBehaviour
         int harvested = Mathf.Min(harvestAmountPerAction, CurrentAmount);
         CurrentAmount -= harvested;
 
+        if (resourceType == ResourceType.Wood)
+        {
+            HarvestTree();
+        }
+        else
+        {
+            HarvestNonTree();
+        }
+
+        return harvested;
+    }
+
+    /// <summary>
+    /// 木の採取処理: 揺れ → 枯渇時に倒木
+    /// </summary>
+    private void HarvestTree()
+    {
+        if (isFalling) return;
+
+        if (CurrentAmount > 0)
+        {
+            // 揺れはStrikeイベント経由でOnStrikeHit()から呼ばれる
+        }
+        else
+        {
+            // 枯渇した → 倒木アニメーション
+            FallTree();
+        }
+    }
+
+    /// <summary>
+    /// 木以外の資源の採取処理: 従来通りスケール縮小 → 非アクティブ化
+    /// </summary>
+    private void HarvestNonTree()
+    {
         // 残量に応じてスケールを変化（視覚フィードバック）
         float ratio = (float)CurrentAmount / maxAmount;
         float scaleFactor = Mathf.Lerp(depletedScale, 1f, ratio);
@@ -59,8 +105,54 @@ public class ResourceNode : MonoBehaviour
             Debug.Log($"[ResourceNode] {gameObject.name} has been depleted!");
             gameObject.SetActive(false);
         }
+    }
 
-        return harvested;
+    /// <summary>
+    /// 斧が当たった瞬間に呼ばれる。木をわずかに揺らす演出。
+    /// NPCAnimationController の Strike イベント経由で外部から呼ばれる。
+    /// </summary>
+    public void OnStrikeHit()
+    {
+        if (isFalling || resourceType != ResourceType.Wood) return;
+
+        // 既存の揺れTweenを止めてから新しい揺れを開始（重複防止）
+        transform.DOKill(complete: false);
+
+        // ローカルのZ軸周りに小さく揺らす（左右にブルブル揺れる感じ）
+        Vector3 punchRotation = new Vector3(0f, 0f, shakeStrength);
+        transform.DOPunchRotation(punchRotation, shakeDuration, vibrato: 8, elasticity: 0.3f);
+    }
+
+    /// <summary>
+    /// 木を倒すアニメーション。ローカルX軸方向に倒れる。
+    /// </summary>
+    private void FallTree()
+    {
+        isFalling = true;
+
+        // 進行中のTweenをすべてキャンセル
+        transform.DOKill(complete: false);
+
+        // コライダーを無効化（倒れている途中にNPCが引っかからないように）
+        Collider col = GetComponent<Collider>();
+        if (col != null) col.enabled = false;
+
+        Debug.Log($"[ResourceNode] {gameObject.name} is falling!");
+
+        // ローカルX軸方向に倒れる（前方に倒れる演出）
+        Vector3 fallRotation = transform.localRotation.eulerAngles + new Vector3(fallAngle, 0f, 0f);
+
+        transform.DOLocalRotate(fallRotation, fallDuration, RotateMode.Fast)
+            .SetEase(Ease.InQuad) // 加速しながら倒れる（重力感）
+            .OnComplete(() =>
+            {
+                Debug.Log($"[ResourceNode] {gameObject.name} has been depleted!");
+                // 倒れた後、少し待ってから非アクティブにする
+                DOVirtual.DelayedCall(disappearDelay, () =>
+                {
+                    gameObject.SetActive(false);
+                });
+            });
     }
 
     /// <summary>

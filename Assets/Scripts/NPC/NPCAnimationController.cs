@@ -7,6 +7,7 @@ public class NPCAnimationController : MonoBehaviour
 {
     private Animator animator;
     private NavMeshAgent agent;
+    private NPCController npcController;
 
     // Parameters for Animator
     private readonly int isMovingHash = Animator.StringToHash("IsMoving");
@@ -20,6 +21,7 @@ public class NPCAnimationController : MonoBehaviour
     {
         animator = GetComponent<Animator>();
         agent = GetComponent<NavMeshAgent>();
+        npcController = GetComponent<NPCController>();
     }
 
     void Update()
@@ -64,5 +66,17 @@ public class NPCAnimationController : MonoBehaviour
     // Animation Event Receivers
     public void FootR() { }
     public void FootL() { }
-    public void Hit() { } // Chop/Mine アニメーションのヒットイベント用
+    public void Hit() { OnStrikeOrHit(); }    // Chop/Mine アニメーションのヒットイベント用
+    public void Strike() { OnStrikeOrHit(); } // Chop-Horizontal/Chop-Vertical-Upper のヒットイベント用
+
+    /// <summary>
+    /// 斧/ツールが当たった瞬間の共通処理。NPCControllerに通知して木を揺らす。
+    /// </summary>
+    private void OnStrikeOrHit()
+    {
+        if (npcController != null)
+        {
+            npcController.OnStrikeHit();
+        }
+    }
 }
