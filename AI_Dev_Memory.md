@@ -89,5 +89,19 @@
 *   **レイヤー設定:** Resource = Layer 9
 *   **木のマテリアル:** URP Lit シェーダー (Surface=Opaque, Blend=0)。CameraOccluder で半透明化対応済み。
 
+## 🔧 5/9 実装済み（Voxel Terrain実装）
+*   **VoxelWorldアーキテクチャ**:
+    *   16x16x16チャンク単位のブロック地形（Going Medieval風）を生成。
+    *   サイズ: X=1, Y=2, Z=1のブロック。
+    *   テクスチャ: `TextureAtlasBuilder` で自動アトラス化し適用。
+    *   NavMesh: `VoxelWorld` を `[DefaultExecutionOrder(-50)]` で先に生成・NavMeshベイクし、その後NPCを `agent.Warp()` で地表面に再配置。
+
+## 🚀 次回のタスク（最優先）
+1.  **建築ブロックとワールドブロックの同期**: 
+    *   建築するブロックのサイズと配置位置（グリッドスナップ）を、VoxelWorldのブロック（X=1, Y=2, Z=1）と完全に一致させる。
+    *   GridManagerの調整と建築プレハブのスケール修正。
+2.  **水ブロックの配置**: 川を作るための水ブロック追加。
+3.  **建築モードの検証**: 起伏のある地形上での建築テスト。
+
 ---
-*Last Updated: 2026-05-06 (木の伐採揺れ・倒木アニメーション実装)*
+*Last Updated: 2026-05-09 (Voxel Terrain実装と次回への引き継ぎ)*

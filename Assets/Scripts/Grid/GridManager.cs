@@ -38,7 +38,15 @@ public class GridManager : MonoBehaviour
     {
         float x = gp.x * cellSize + gridOrigin.x + cellSize * 0.5f;
         float z = gp.y * cellSize + gridOrigin.z + cellSize * 0.5f;
-        return new Vector3(x, 0f, z);
+
+        // VoxelWorldが存在する場合、地表面の高さを使用
+        float y = 0f;
+        if (VoxelWorld.Instance != null)
+        {
+            y = VoxelWorld.Instance.GetSurfaceWorldY(x, z);
+        }
+
+        return new Vector3(x, y, z);
     }
 
     public bool IsValidPosition(Vector2Int gp)
