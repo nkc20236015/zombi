@@ -61,8 +61,16 @@ public class BuildingManager : MonoBehaviour
                 preview = Instantiate(blockPrefabs[selectedBlockIndex]);
                 foreach (var c in preview.GetComponentsInChildren<Collider>()) c.enabled = false;
             }
-            preview.transform.position = grid.GridToWorld(gp);
+
+            // グリッド座標をワールド座標に変換（底面中央の座標が返る）
+            Vector3 worldPos = grid.GridToWorld(gp);
+            // ターゲットとなるセルの中央座標
+            Vector3 targetCenter = new Vector3(worldPos.x, worldPos.y + VoxelData.BlockHeight * 0.5f, worldPos.z);
+
+            AlignToCellCenter(preview, targetCenter);
+            
             preview.SetActive(true);
+
             if (canPlace && previewValidMaterial != null)
                 foreach (var r in preview.GetComponentsInChildren<Renderer>()) r.material = previewValidMaterial;
             else if (!canPlace && previewInvalidMaterial != null)
@@ -74,7 +82,15 @@ public class BuildingManager : MonoBehaviour
     void PlaceBlock()
     {
         Vector3 wp = grid.GridToWorld(curGridPos);
-        GameObject block = Instantiate(blockPrefabs[selectedBlockIndex], wp, Quaternion.identity);
+        Vector3 targetCenter = new Vector3(wp.x, wp.y + VoxelData.BlockHeight * 0.5f, wp.z);
+
+        GameObject block = Instantiate(blockPrefabs[selectedBlockIndex], Vector3.zero, Quaternion.identity);
+
+        // ブロックのスケールをVoxelWorldのブロックサイズに合わせる
+        EnsureBlockScale(block);
+
+        AlignToCellCenter(block, targetCenter);
+
         if (!grid.PlaceObject(curGridPos, block))
         {
             Destroy(block);
@@ -89,12 +105,75 @@ public class BuildingManager : MonoBehaviour
             obstacle.carveOnlyStationary = true;
             obstacle.shape = UnityEngine.AI.NavMeshObstacleShape.Box;
             // ブロックのコライダーに合わせたサイズ
-            var col = block.GetComponent<BoxCollider>();
-            if (col != null)
+            var boxCol = block.GetComponent<BoxCollider>();
+            if (boxCol != null)
             {
-                obstacle.center = col.center;
-                obstacle.size = col.size;
+                obstacle.center = boxCol.center;
+                obstacle.size = boxCol.size;
             }
+            else
+            {
+                // VoxelWorldのブロックサイズに合わせたデフォルト
+                obstacle.size = new Vector3(VoxelData.BlockWidth, VoxelData.BlockHeight, VoxelData.BlockDepth);
+                obstacle.center = new Vector3(0, VoxelData.BlockHeight * 0.5f, 0);
+            }
+        }
+    }
+
+    /// <summary>
+    /// 建築ブロックのスケールをVoxelWorldのブロックサイズに合わせる。
+    /// </summary>
+    void EnsureBlockScale(GameObject block)
+    {
+        Vector3 currentSize = Vector3.one;
+        var col = block.GetComponentInChildren<BoxCollider>();
+        if (col != null)
+        {
+            currentSize = Vector3.Scale(col.size, col.transform.lossyScale);
+        }
+        else
+        {
+            var renderers = block.GetComponentsInChildren<Renderer>();
+            if (renderers.Length > 0)
+            {
+                Bounds b = renderers[0].bounds;
+                for (int i = 1; i < renderers.Length; i++) b.Encapsulate(renderers[i].bounds);
+                currentSize = b.size;
+            }
+        }
+
+        Vector3 targetSize = new Vector3(VoxelData.BlockWidth, VoxelData.BlockHeight, VoxelData.BlockDepth);
+        if (currentSize.x > 0 && currentSize.y > 0 && currentSize.z > 0 && 
+            (!Mathf.Approximately(currentSize.x, targetSize.x) ||
+             !Mathf.Approximately(currentSize.y, targetSize.y) ||
+             !Mathf.Approximately(currentSize.z, targetSize.z)))
+        {
+            Vector3 newScale = new Vector3(
+                block.transform.localScale.x * (targetSize.x / currentSize.x),
+                block.transform.localScale.y * (targetSize.y / currentSize.y),
+                block.transform.localScale.z * (targetSize.z / currentSize.z)
+            );
+            block.transform.localScale = newScale;
+        }
+    }
+
+    /// <summary>
+    /// ブロックの見た目の中心を正確にターゲット座標に合わせる
+    /// </summary>
+    void AlignToCellCenter(GameObject block, Vector3 targetCenter)
+    {
+        var renderers = block.GetComponentsInChildren<Renderer>();
+        if (renderers.Length > 0)
+        {
+            Bounds b = renderers[0].bounds;
+            for (int i = 1; i < renderers.Length; i++) b.Encapsulate(renderers[i].bounds);
+            
+            Vector3 offset = targetCenter - b.center;
+            block.transform.position += offset;
+        }
+        else
+        {
+            block.transform.position = targetCenter;
         }
     }
 

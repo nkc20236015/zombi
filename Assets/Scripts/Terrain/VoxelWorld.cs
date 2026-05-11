@@ -12,19 +12,19 @@ public class VoxelWorld : MonoBehaviour
     public static VoxelWorld Instance { get; private set; }
 
     [Header("World Settings")]
-    [SerializeField] private int worldWidthInBlocks = 40;
-    [SerializeField] private int worldDepthInBlocks = 40;
+    [SerializeField] private int worldWidthInBlocks = 100;
+    [SerializeField] private int worldDepthInBlocks = 100;
     [SerializeField] private int worldHeightInBlocks = 8;
 
     [Header("Terrain Generation")]
     [SerializeField] private int surfaceBaseHeight = 4;
     [SerializeField] private float noiseScale = 0.08f;
-    [SerializeField] private int noiseAmplitude = 2;
+    [SerializeField] private int noiseAmplitude = 0; // 地形の起伏を一旦無効化
     [SerializeField] private int dirtLayerDepth = 3;
     [SerializeField] private int seed = 0;
 
-    [Header("Material")]
-    [SerializeField] private Material terrainMaterial;
+    [Header("Materials")]
+    [SerializeField] private Material[] blockMaterials;
 
     [Header("NavMesh")]
     [SerializeField] private NavMeshSurface navMeshSurface;
@@ -45,24 +45,19 @@ public class VoxelWorld : MonoBehaviour
 
     void Start()
     {
-        if (terrainMaterial == null)
+        if (blockMaterials == null || blockMaterials.Length == 0)
         {
-            BuildFallbackMaterial();
+            BuildFallbackMaterials();
         }
         BuildWorld();
     }
 
     /// <summary>
-    /// テクスチャアトラスが未設定時の仮マテリアル。単色タイルで表現。
+    /// マテリアルが未設定時の仮マテリアル（サブメッシュごとの単色）を生成。
     /// </summary>
-    private void BuildFallbackMaterial()
+    private void BuildFallbackMaterials()
     {
-        int tileSize = 64;
-        int atlasWidth = tileSize * VoxelData.AtlasTileCount;
-        Texture2D atlas = new Texture2D(atlasWidth, tileSize, TextureFormat.RGBA32, false);
-        atlas.filterMode = FilterMode.Point;
-        atlas.wrapMode = TextureWrapMode.Clamp;
-
+        blockMaterials = new Material[VoxelData.AtlasTileCount];
         Color[] colors = new Color[]
         {
             new Color(0.35f, 0.65f, 0.15f), // GrassTop
@@ -72,19 +67,23 @@ public class VoxelWorld : MonoBehaviour
             new Color(0.30f, 0.60f, 0.85f), // Water
         };
 
-        for (int t = 0; t < VoxelData.AtlasTileCount; t++)
-        {
-            Color[] tile = new Color[tileSize * tileSize];
-            for (int i = 0; i < tile.Length; i++) tile[i] = colors[t];
-            atlas.SetPixels(t * tileSize, 0, tileSize, tileSize, tile);
-        }
-        atlas.Apply();
-
         Shader shader = Shader.Find("Universal Render Pipeline/Lit");
         if (shader == null) shader = Shader.Find("Standard");
-        terrainMaterial = new Material(shader);
-        terrainMaterial.mainTexture = atlas;
-        terrainMaterial.name = "TerrainFallback";
+
+        for (int i = 0; i < VoxelData.AtlasTileCount; i++)
+        {
+            Material mat = new Material(shader);
+            
+            // URP Lit Shaderの場合、BaseColorプロパティに設定する
+            if (mat.HasProperty("_BaseColor"))
+                mat.SetColor("_BaseColor", colors[i]);
+            else
+                mat.color = colors[i];
+
+            mat.name = "TerrainFallback_" + (TextureTileIndex)i;
+            blockMaterials[i] = mat;
+        }
+
         Debug.Log("[VoxelWorld] フォールバックマテリアルを生成しました。");
     }
 
@@ -235,7 +234,7 @@ public class VoxelWorld : MonoBehaviour
         chunkObj.AddComponent<MeshCollider>();
 
         VoxelChunk chunk = chunkObj.AddComponent<VoxelChunk>();
-        chunk.Initialize(this, chunkBlockPos, terrainMaterial);
+        chunk.Initialize(this, chunkBlockPos, blockMaterials);
 
         for (int x = 0; x < VoxelData.ChunkWidth; x++)
             for (int y = 0; y < VoxelData.ChunkHeight; y++)

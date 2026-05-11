@@ -13,7 +13,7 @@ public class VoxelChunk : MonoBehaviour
     private VoxelWorld world;
 
     private List<Vector3> verts = new List<Vector3>();
-    private List<int> tris = new List<int>();
+    private List<int>[] submeshTris;
     private List<Vector2> uvsBuffer = new List<Vector2>();
 
     private MeshFilter mf;
@@ -21,18 +21,24 @@ public class VoxelChunk : MonoBehaviour
     private MeshCollider mc;
     private Mesh mesh;
 
-    public void Initialize(VoxelWorld parentWorld, Vector3Int chunkPos, Material terrainMat)
+    public void Initialize(VoxelWorld parentWorld, Vector3Int chunkPos, Material[] terrainMats)
     {
         world = parentWorld;
         ChunkPosition = chunkPos;
         mf = GetComponent<MeshFilter>();
         mr = GetComponent<MeshRenderer>();
         mc = GetComponent<MeshCollider>();
-        mr.material = terrainMat;
+        mr.materials = terrainMats;
         blocks = new BlockType[VoxelData.ChunkWidth, VoxelData.ChunkHeight, VoxelData.ChunkDepth];
         mesh = new Mesh();
         mesh.name = $"Chunk_{chunkPos.x}_{chunkPos.y}_{chunkPos.z}";
         mf.mesh = mesh;
+        
+        submeshTris = new List<int>[terrainMats.Length];
+        for (int i = 0; i < terrainMats.Length; i++)
+        {
+            submeshTris[i] = new List<int>();
+        }
     }
 
     public BlockType GetBlock(int x, int y, int z)
@@ -56,7 +62,7 @@ public class VoxelChunk : MonoBehaviour
     public void RebuildMesh()
     {
         verts.Clear();
-        tris.Clear();
+        foreach (var tris in submeshTris) tris.Clear();
         uvsBuffer.Clear();
 
         for (int x = 0; x < VoxelData.ChunkWidth; x++)
@@ -71,7 +77,13 @@ public class VoxelChunk : MonoBehaviour
         mesh.Clear();
         if (verts.Count == 0) { mc.sharedMesh = null; return; }
         mesh.SetVertices(verts);
-        mesh.SetTriangles(tris, 0);
+        
+        mesh.subMeshCount = submeshTris.Length;
+        for (int i = 0; i < submeshTris.Length; i++)
+        {
+            mesh.SetTriangles(submeshTris[i], i);
+        }
+        
         mesh.SetUVs(0, uvsBuffer);
         mesh.RecalculateNormals();
         mesh.RecalculateBounds();
@@ -98,11 +110,14 @@ public class VoxelChunk : MonoBehaviour
                 verts.Add(VoxelData.Vertices[vi] + offset);
             }
 
-            tris.Add(vs); tris.Add(vs + 1); tris.Add(vs + 2);
-            tris.Add(vs); tris.Add(vs + 2); tris.Add(vs + 3);
-
             TextureTileIndex tile = BlockData.GetTextureTile(block, face);
-            Vector2[] fuv = VoxelData.GetFaceUVs(tile);
+            int submeshIndex = (int)tile;
+
+            submeshTris[submeshIndex].Add(vs); submeshTris[submeshIndex].Add(vs + 1); submeshTris[submeshIndex].Add(vs + 2);
+            submeshTris[submeshIndex].Add(vs); submeshTris[submeshIndex].Add(vs + 2); submeshTris[submeshIndex].Add(vs + 3);
+
+            // サブメッシュ方式なのでUVは常に0~1を使用
+            Vector2[] fuv = VoxelData.BaseUVs;
             uvsBuffer.Add(fuv[0]); uvsBuffer.Add(fuv[1]);
             uvsBuffer.Add(fuv[2]); uvsBuffer.Add(fuv[3]);
         }

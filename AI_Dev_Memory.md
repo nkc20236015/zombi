@@ -96,12 +96,23 @@
     *   テクスチャ: `TextureAtlasBuilder` で自動アトラス化し適用。
     *   NavMesh: `VoxelWorld` を `[DefaultExecutionOrder(-50)]` で先に生成・NavMeshベイクし、その後NPCを `agent.Warp()` で地表面に再配置。
 
+## 🔧 5/11 実装済み（建築ブロック×VoxelWorld同期）
+*   **GridManager改修 (`GridManager.cs`):**
+    *   セルサイズを `VoxelData.BlockWidth/BlockDepth` と直接同期（ハードコードの`cellSize`を廃止）
+    *   グリッドサイズをVoxelWorldのワールドサイズから自動取得（`InitializeGrid()`）
+    *   `GridToWorldForBuilding()` メソッド追加（ブロック積み上げ対応、将来用）
+*   **GridVisualizer改修 (`GridVisualizer.cs`):**
+    *   グリッド線を地形の起伏に沿って描画（各セグメントごとにVoxelWorldの地表面Y座標を取得）
+    *   ホバーセル・占有セルのY座標も地形に追従
+*   **BuildingManager改修 (`BuildingManager.cs`):**
+    *   ブロック設置時にVoxelWorldの`SetBlock()`を呼んでボクセルデータに反映
+    *   ブロック削除時もVoxelWorldに`BlockType.Air`を書き込んで同期
+    *   `EnsureBlockScale()`: プレハブのサイズがVoxelDataのブロックサイズと異なる場合、自動スケール調整
+
 ## 🚀 次回のタスク（最優先）
-1.  **建築ブロックとワールドブロックの同期**: 
-    *   建築するブロックのサイズと配置位置（グリッドスナップ）を、VoxelWorldのブロック（X=1, Y=2, Z=1）と完全に一致させる。
-    *   GridManagerの調整と建築プレハブのスケール修正。
-2.  **水ブロックの配置**: 川を作るための水ブロック追加。
-3.  **建築モードの検証**: 起伏のある地形上での建築テスト。
+1.  **建築モードの動作テスト**: 起伏のある地形上で建築ブロックが正しく配置されるか確認
+2.  **水ブロックの配置**: 川を作るための水ブロック追加
+3.  **Phase 3:** 溜まった資源を用いた建築コスト・消費システムの構築
 
 ---
-*Last Updated: 2026-05-09 (Voxel Terrain実装と次回への引き継ぎ)*
+*Last Updated: 2026-05-11 (建築ブロック×VoxelWorld同期)*

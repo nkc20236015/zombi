@@ -1,5 +1,12 @@
 fileFormatVersion: 2
 guid: 3d43c277fa65dde4982d11eb09eaa8f8
+AssetOrigin:
+  serializedVersion: 1
+  productId: 325134
+  packageName: PolyPeople Series - City People
+  packageVersion: 1.0
+  assetPath: Assets/CityPeople_Free/Meshes/Male_Kid.fbx
+  uploadId: 784042
 ModelImporter:
   serializedVersion: 22200
   internalIDToNameTable: []
@@ -30,7 +37,7 @@ ModelImporter:
     extraExposedTransformPaths: []
     extraUserProperties: []
     clipAnimations: []
-    isReadable: 0
+    isReadable: 1
   meshes:
     lODScreenPercentages: []
     globalScale: 1
@@ -342,8 +349,7 @@ ModelImporter:
     - name: Hand.R
       parentName: Lower Arm.R
       position: {x: -5.9604643e-10, y: 0.0018059292, z: -3.2224222e-16}
-      rotation: {x: -0.0000000015030799, y: -0.00000023841858, z: -4.3522504e-14,
-        w: 1}
+      rotation: {x: -0.0000000015030799, y: -0.00000023841858, z: -4.3522504e-14, w: 1}
       scale: {x: 1, y: 0.99999994, z: 1}
     - name: Finger.R
       parentName: Hand.R
@@ -429,10 +435,3 @@ ModelImporter:
   userData: 
   assetBundleName: 
   assetBundleVariant: 
-AssetOrigin:
-  serializedVersion: 1
-  productId: 325134
-  packageName: PolyPeople Series - City People
-  packageVersion: 1.0
-  assetPath: Assets/CityPeople_Free/Meshes/Male_Kid.fbx
-  uploadId: 784042

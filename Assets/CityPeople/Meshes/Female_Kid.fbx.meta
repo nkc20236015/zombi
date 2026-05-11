@@ -1,5 +1,12 @@
 fileFormatVersion: 2
 guid: 69e8bdb101045414e9a02c6deb042e83
+AssetOrigin:
+  serializedVersion: 1
+  productId: 325134
+  packageName: PolyPeople Series - City People
+  packageVersion: 1.0
+  assetPath: Assets/CityPeople_Free/Meshes/Female_Kid.fbx
+  uploadId: 784042
 ModelImporter:
   serializedVersion: 22200
   internalIDToNameTable: []
@@ -30,7 +37,7 @@ ModelImporter:
     extraExposedTransformPaths: []
     extraUserProperties: []
     clipAnimations: []
-    isReadable: 0
+    isReadable: 1
   meshes:
     lODScreenPercentages: []
     globalScale: 1
@@ -428,10 +435,3 @@ ModelImporter:
   userData: 
   assetBundleName: 
   assetBundleVariant: 
-AssetOrigin:
-  serializedVersion: 1
-  productId: 325134
-  packageName: PolyPeople Series - City People
-  packageVersion: 1.0
-  assetPath: Assets/CityPeople_Free/Meshes/Female_Kid.fbx
-  uploadId: 784042

@@ -1,7 +1,14 @@
 fileFormatVersion: 2
 guid: afe6117b5fd1e6c458b12d4e89abaeec
+AssetOrigin:
+  serializedVersion: 1
+  productId: 361676
+  packageName: PolyPeople Series - Zombies
+  packageVersion: 1.0
+  assetPath: Assets/PolyPeople_Zombies/Meshes/Zombies_Male_Adult.fbx
+  uploadId: 862360
 ModelImporter:
-  serializedVersion: 24200
+  serializedVersion: 22200
   internalIDToNameTable: []
   externalObjects: {}
   materials:
@@ -30,7 +37,7 @@ ModelImporter:
     extraExposedTransformPaths: []
     extraUserProperties: []
     clipAnimations: []
-    isReadable: 0
+    isReadable: 1
   meshes:
     lODScreenPercentages: []
     globalScale: 1
@@ -56,9 +63,6 @@ ModelImporter:
     maxBonesPerVertex: 4
     minBoneWeight: 0.001
     optimizeBones: 1
-    generateMeshLods: 0
-    meshLodGenerationFlags: 0
-    maximumMeshLod: -1
     meshOptimizationFlags: -1
     indexFormat: 0
     secondaryUVAngleDistortion: 8
@@ -345,8 +349,7 @@ ModelImporter:
     - name: Hand.R
       parentName: Lower Arm.R
       position: {x: -4.9420253e-11, y: 0.0025282006, z: 1.0047518e-16}
-      rotation: {x: -0.0000000015031267, y: -0.00000023841855, z: -3.6381952e-14,
-        w: 1}
+      rotation: {x: -0.0000000015031267, y: -0.00000023841855, z: -3.6381952e-14, w: 1}
       scale: {x: 0.99999994, y: 1, z: 0.99999994}
     - name: Finger.R
       parentName: Hand.R
@@ -432,10 +435,3 @@ ModelImporter:
   userData: 
   assetBundleName: 
   assetBundleVariant: 
-AssetOrigin:
-  serializedVersion: 1
-  productId: 361676
-  packageName: PolyPeople Series - Zombies
-  packageVersion: 1.0
-  assetPath: Assets/PolyPeople_Zombies/Meshes/Zombies_Male_Adult.fbx
-  uploadId: 862360

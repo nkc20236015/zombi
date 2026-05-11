@@ -537,15 +537,20 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 63432efa150ed0d4b8011ddf59e085a6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  worldWidthInBlocks: 40
-  worldDepthInBlocks: 40
+  worldWidthInBlocks: 100
+  worldDepthInBlocks: 100
   worldHeightInBlocks: 8
   surfaceBaseHeight: 4
   noiseScale: 0.08
-  noiseAmplitude: 2
+  noiseAmplitude: 0
   dirtLayerDepth: 3
   seed: 0
-  terrainMaterial: {fileID: 2100000, guid: 3a26f89bd4e950f438e683a500970359, type: 2}
+  blockMaterials:
+  - {fileID: 2100000, guid: d0045273f2fd3a3498f17c296d5ca8dd, type: 2}
+  - {fileID: 2100000, guid: c90c910f4eea8324bbcd8f444b4cc160, type: 2}
+  - {fileID: 2100000, guid: 93d45a19256795145a61de4bfe206f26, type: 2}
+  - {fileID: 2100000, guid: 1762aa3447a38ac4bb17ca902e049a38, type: 2}
+  - {fileID: 2100000, guid: 21f176000372f4940a8c865b9a39d5eb, type: 2}
   navMeshSurface: {fileID: 418328775}
 --- !u!4 &418328777
 Transform:
@@ -2252,7 +2257,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   gridLineColor: {r: 1, g: 1, b: 1, a: 0.3}
   gridBorderColor: {r: 1, g: 0.8, b: 0, a: 0.6}
-  lineHeight: 0.02
+  lineHeightOffset: 0.05
   hoverValidColor: {r: 0, g: 1, b: 0, a: 0.4}
   hoverInvalidColor: {r: 1, g: 0, b: 0, a: 0.4}
   occupiedColor: {r: 0.5, g: 0.5, b: 1, a: 0.3}
@@ -2272,7 +2277,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   gridWidth: 25
   gridHeight: 25
-  cellSize: 1
   gridOrigin: {x: 12.5, y: 0, z: 12.5}
 --- !u!4 &1061661873
 Transform:

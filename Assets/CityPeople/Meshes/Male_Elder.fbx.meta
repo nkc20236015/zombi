@@ -1,5 +1,12 @@
 fileFormatVersion: 2
 guid: 10d630adca3480b4c8ef8b279f9eb651
+AssetOrigin:
+  serializedVersion: 1
+  productId: 325134
+  packageName: PolyPeople Series - City People
+  packageVersion: 1.0
+  assetPath: Assets/CityPeople_Free/Meshes/Male_Elder.fbx
+  uploadId: 784042
 ModelImporter:
   serializedVersion: 22200
   internalIDToNameTable: []
@@ -30,7 +37,7 @@ ModelImporter:
     extraExposedTransformPaths: []
     extraUserProperties: []
     clipAnimations: []
-    isReadable: 0
+    isReadable: 1
   meshes:
     lODScreenPercentages: []
     globalScale: 1
@@ -312,8 +319,7 @@ ModelImporter:
     - name: Hand.L
       parentName: Lower Arm.L
       position: {x: 4.6365186e-11, y: 0.002371918, z: 3.330669e-18}
-      rotation: {x: -0.0000000015031636, y: 0.00000023841858, z: -0.0000000037252446,
-        w: 1}
+      rotation: {x: -0.0000000015031636, y: 0.00000023841858, z: -0.0000000037252446, w: 1}
       scale: {x: 1, y: 1, z: 1}
     - name: Finger.L
       parentName: Hand.L
@@ -343,8 +349,7 @@ ModelImporter:
     - name: Hand.R
       parentName: Lower Arm.R
       position: {x: -4.6365186e-11, y: 0.002371918, z: 3.330669e-18}
-      rotation: {x: -0.0000000015031636, y: -0.00000023841858, z: 0.0000000037252446,
-        w: 1}
+      rotation: {x: -0.0000000015031636, y: -0.00000023841858, z: 0.0000000037252446, w: 1}
       scale: {x: 1, y: 1, z: 1}
     - name: Finger.R
       parentName: Hand.R
@@ -430,10 +435,3 @@ ModelImporter:
   userData: 
   assetBundleName: 
   assetBundleVariant: 
-AssetOrigin:
-  serializedVersion: 1
-  productId: 325134
-  packageName: PolyPeople Series - City People
-  packageVersion: 1.0
-  assetPath: Assets/CityPeople_Free/Meshes/Male_Elder.fbx
-  uploadId: 784042
