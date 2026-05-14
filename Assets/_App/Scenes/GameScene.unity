@@ -4484,7 +4484,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   blockPrefabs:
-  - {fileID: 4200253655930215041, guid: cf39cfef60f91db42b52cbde23c458f0, type: 3}
+  - {fileID: 3345020884171263424, guid: 5315c0ae1812c5945bbcd8dfa12c5153, type: 3}
   selectedBlockIndex: 0
   previewValidMaterial: {fileID: 2100000, guid: 391e86cdef2a38b409ff34eee9b8e2c1, type: 2}
   previewInvalidMaterial: {fileID: 2100000, guid: 2001aeca55254744097f24128816c826, type: 2}
