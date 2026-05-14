@@ -61,7 +61,7 @@
     *   メインカメラにアタッチして使用
     *   選択中NPCとカメラの間にある障害物（木など）を自動的に半透明化
     *   カメラ自体が木に近づいた場合も周囲の木を半透明化（OverlapSphere方式、BoxCollider不要）
-    *   URP Litシェーダーの_Surface / _Blend / RenderQueueを動的に切り替え
+    *   URP Litシェーダー host_Surface / _Blend / RenderQueueを動的に切り替え
     *   カメラが離れると滑らかに元の不透明に戻る
 
 ## 🔧 5/6 実装済み（伐採アニメーション改善）
@@ -96,7 +96,13 @@
     *   テクスチャ: `TextureAtlasBuilder` で自動アトラス化し適用。
     *   NavMesh: `VoxelWorld` を `[DefaultExecutionOrder(-50)]` で先に生成・NavMeshベイクし、その後NPCを `agent.Warp()` で地表面に再配置。
 
-## 🔧 5/11 実装済み（建築ブロック×VoxelWorld同期）
+## 🔧 5/11 実装済み（地形高品質化 ＆ 建築同期）
+*   **レンダリング方式の刷新 (アトラスからサブメッシュへ)**:
+    *   `VoxelChunk.cs` および `VoxelWorld.cs` をリファクタリング。
+    *   単一テクスチャアトラス方式から、ブロックの種類ごとに `Material` を割り当てる「サブメッシュ方式」に変更。
+*   **「Handpainted Grass & Ground Textures」の適用**:
+    *   指定アセットの高品質なテクスチャを抽出して新規マテリアルを作成し、各ブロックタイプに自動アサインするよう実装。
+    *   草(`Grass_normal_down`)、土(`dirt_normal_down`)、石(`dirt_desatured_rocks_down`)、砂(`dirt_lighted_down`)を割り当て済み。
 *   **GridManager改修 (`GridManager.cs`):**
     *   セルサイズを `VoxelData.BlockWidth/BlockDepth` と直接同期（ハードコードの`cellSize`を廃止）
     *   グリッドサイズをVoxelWorldのワールドサイズから自動取得（`InitializeGrid()`）
@@ -110,9 +116,14 @@
     *   `EnsureBlockScale()`: プレハブのサイズがVoxelDataのブロックサイズと異なる場合、自動スケール調整
 
 ## 🚀 次回のタスク（最優先）
-1.  **建築モードの動作テスト**: 起伏のある地形上で建築ブロックが正しく配置されるか確認
-2.  **水ブロックの配置**: 川を作るための水ブロック追加
-3.  **Phase 3:** 溜まった資源を用いた建築コスト・消費システムの構築
+1.  **建築システムの再構築とテスト**: 
+    *   起伏のある地形上で建築ブロックが正しく配置されるか確認。
+    *   地形の上にプレハブ（土台・壁・屋根など）を設置し、表示や当たり判定に問題がないか検証。
+2.  **起伏の再適用**:
+    *   現在オフになっている起伏（`noiseAmplitude`）を有効にし、実戦的な地形での建築テスト。
+3.  **UI/UXの拡張**:
+    *   採取対象をクリックした際のUIパネル表示や、NPC一覧UIの構築。
+4.  **Phase 3:** 溜まった資源を用いた建築コスト・消費システムの構築。
 
 ---
-*Last Updated: 2026-05-11 (建築ブロック×VoxelWorld同期)*
+*Last Updated: 2026-05-14 (最新同期 ＆ 地形高品質化・建築同期完了)*
