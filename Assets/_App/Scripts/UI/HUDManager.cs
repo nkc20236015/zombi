@@ -100,7 +100,7 @@ public class HUDManager : MonoBehaviour
     {
         if (dayText != null)
         {
-            dayText.text = day + "日目";
+            dayText.text = day.ToString();
 
             // DOTween アニメーション (ふわっとしたポップ)
             dayText.transform.DOKill(true);
