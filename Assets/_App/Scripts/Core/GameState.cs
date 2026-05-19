@@ -31,5 +31,11 @@ public enum PlayerMode
     Normal,
     
     /// <summary>建築モード（ブロック設置）</summary>
-    Building
+    Building,
+    
+    /// <summary>伐採タスク登録モード（AxePanel押下後）</summary>
+    Gathering,
+    
+    /// <summary>タスクキャンセルモード（CancelPanel押下後）</summary>
+    Cancelling
 }

@@ -24,8 +24,11 @@ public class SelectionManager : MonoBehaviour
 
     void Update()
     {
-        if (GameManager.Instance != null && GameManager.Instance.CurrentPlayerMode == PlayerMode.Building)
-            return; // 建築モード中は選択無効
+        if (GameManager.Instance != null && 
+            (GameManager.Instance.CurrentPlayerMode == PlayerMode.Building ||
+             GameManager.Instance.CurrentPlayerMode == PlayerMode.Gathering ||
+             GameManager.Instance.CurrentPlayerMode == PlayerMode.Cancelling))
+            return; // 建築・伐採・キャンセルモード中は選択無効
 
         if (Input.GetMouseButtonDown(0))
         {

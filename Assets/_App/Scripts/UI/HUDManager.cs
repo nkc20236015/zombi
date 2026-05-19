@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.UI;
 using TMPro;
 using DG.Tweening;
 
@@ -17,6 +18,14 @@ public class HUDManager : MonoBehaviour
     [SerializeField] private TextMeshProUGUI stoneText;
     [SerializeField] private TextMeshProUGUI foodText;
 
+    [Header("Task Panel Buttons")]
+    [SerializeField] private Button axeButton;      // AxeImage に付いている Button
+    [SerializeField] private Button cancelButton;   // CancelImage に付いている Button
+
+    // ハイライト用の色
+    private Color normalButtonColor = Color.white;
+    private Color activeButtonColor = new Color(1f, 0.85f, 0.4f, 1f); // 黄金色ハイライト
+
     private void Start()
     {
         if (GameManager.Instance != null)
@@ -24,6 +33,7 @@ public class HUDManager : MonoBehaviour
             // GameManagerのイベントに登録
             GameManager.Instance.OnGameStateChanged += UpdatePhaseUI;
             GameManager.Instance.OnNewDay += UpdateDayUI;
+            GameManager.Instance.OnPlayerModeChanged += UpdateTaskPanelHighlight;
             
             // 初期状態の反映
             UpdateDayUI(GameManager.Instance.CurrentDay);
@@ -37,6 +47,16 @@ public class HUDManager : MonoBehaviour
             // 初期値の反映
             UpdateAllResourceUI();
         }
+
+        // タスクパネルボタンのイベント接続
+        if (axeButton != null)
+        {
+            axeButton.onClick.AddListener(OnAxeButtonClicked);
+        }
+        if (cancelButton != null)
+        {
+            cancelButton.onClick.AddListener(OnCancelButtonClicked);
+        }
     }
 
     private void OnDestroy()
@@ -45,12 +65,16 @@ public class HUDManager : MonoBehaviour
         {
             GameManager.Instance.OnGameStateChanged -= UpdatePhaseUI;
             GameManager.Instance.OnNewDay -= UpdateDayUI;
+            GameManager.Instance.OnPlayerModeChanged -= UpdateTaskPanelHighlight;
         }
 
         if (ResourceManager.Instance != null)
         {
             ResourceManager.Instance.OnResourceChanged -= UpdateResourceUI;
         }
+
+        if (axeButton != null) axeButton.onClick.RemoveListener(OnAxeButtonClicked);
+        if (cancelButton != null) cancelButton.onClick.RemoveListener(OnCancelButtonClicked);
     }
 
     // ==================== Phase / Day UI ====================
@@ -100,7 +124,7 @@ public class HUDManager : MonoBehaviour
     {
         if (dayText != null)
         {
-            dayText.text = day.ToString();
+            dayText.text = day + "日目";
 
             // DOTween アニメーション (ふわっとしたポップ)
             dayText.transform.DOKill(true);
@@ -148,5 +172,63 @@ public class HUDManager : MonoBehaviour
         UpdateResourceUI(ResourceType.Wood, ResourceManager.Instance.GetResource(ResourceType.Wood));
         UpdateResourceUI(ResourceType.Stone, ResourceManager.Instance.GetResource(ResourceType.Stone));
         UpdateResourceUI(ResourceType.Food, ResourceManager.Instance.GetResource(ResourceType.Food));
+    }
+
+    // ==================== Task Panel Buttons ====================
+
+    private void OnAxeButtonClicked()
+    {
+        if (GameManager.Instance == null) return;
+
+        // 既にGatheringモードならNormalに戻す（トグル）
+        if (GameManager.Instance.CurrentPlayerMode == PlayerMode.Gathering)
+        {
+            GameManager.Instance.SetPlayerMode(PlayerMode.Normal);
+        }
+        else
+        {
+            GameManager.Instance.SetPlayerMode(PlayerMode.Gathering);
+        }
+    }
+
+    private void OnCancelButtonClicked()
+    {
+        if (GameManager.Instance == null) return;
+
+        // 既にCancellingモードならNormalに戻す（トグル）
+        if (GameManager.Instance.CurrentPlayerMode == PlayerMode.Cancelling)
+        {
+            GameManager.Instance.SetPlayerMode(PlayerMode.Normal);
+        }
+        else
+        {
+            GameManager.Instance.SetPlayerMode(PlayerMode.Cancelling);
+        }
+    }
+
+    /// <summary>
+    /// PlayerModeが変化したときにボタンのハイライトを更新
+    /// </summary>
+    private void UpdateTaskPanelHighlight(PlayerMode mode)
+    {
+        // AxeButton のハイライト
+        if (axeButton != null)
+        {
+            Image axeImage = axeButton.GetComponent<Image>();
+            if (axeImage != null)
+            {
+                axeImage.color = (mode == PlayerMode.Gathering) ? activeButtonColor : normalButtonColor;
+            }
+        }
+
+        // CancelButton のハイライト
+        if (cancelButton != null)
+        {
+            Image cancelImage = cancelButton.GetComponent<Image>();
+            if (cancelImage != null)
+            {
+                cancelImage.color = (mode == PlayerMode.Cancelling) ? activeButtonColor : normalButtonColor;
+            }
+        }
     }
 }

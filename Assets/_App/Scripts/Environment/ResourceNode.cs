@@ -49,12 +49,67 @@ public class ResourceNode : MonoBehaviour
         hasGridPos = true;
     }
 
-    void Awake()
+void Awake()
     {
         CurrentAmount = maxAmount;
         originalScale = transform.localScale;
         originalRotation = transform.localRotation;
     }
+
+    void Start()
+    {
+        // タスクマーカーの初期化
+        InitializeTaskMarker();
+
+        // HoverHighlight を動的にアタッチ (もし付いていなければ)
+        if (GetComponent<HoverHighlight>() == null)
+        {
+            gameObject.AddComponent<HoverHighlight>();
+        }
+    }
+
+private TaskMarker taskMarker;
+
+    private void InitializeTaskMarker()
+    {
+        taskMarker = GetComponentInChildren<TaskMarker>();
+        if (taskMarker == null)
+        {
+            // 動的に生成する
+            GameObject markerObj = new GameObject("TaskMarker");
+            markerObj.transform.SetParent(transform);
+            // 木の高さに合わせて適当に上へ
+            float height = 3f; 
+            Collider col = GetComponent<Collider>();
+            if (col != null) height = col.bounds.size.y + 1f;
+            
+            markerObj.transform.localPosition = new Vector3(0, height, 0);
+            
+            var sr = markerObj.AddComponent<SpriteRenderer>();
+            // アイコンの設定
+#if UNITY_EDITOR
+            Texture2D tex = UnityEditor.AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/UIアイコン/Pixel Art Icon Pack - RPG/Texture/Weapon & Tool/Axe.png");
+            if (tex != null)
+            {
+                sr.sprite = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(0.5f, 0.5f), 32f);
+            }
+#endif
+            
+            taskMarker = markerObj.AddComponent<TaskMarker>();
+        }
+        
+        // 初期状態は非表示
+        taskMarker.SetVisible(false);
+    }
+
+    public void SetTaskMarker(bool active)
+    {
+        if (taskMarker != null)
+        {
+            taskMarker.SetVisible(active);
+        }
+    }
+
 
     /// <summary>
     /// NPCが資源を1回分採取する。
