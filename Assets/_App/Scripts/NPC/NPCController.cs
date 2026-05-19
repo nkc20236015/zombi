@@ -329,11 +329,36 @@ public class NPCController : MonoBehaviour
         agent.isStopped = true;
         if (animController != null) animController.StopAction();
 
-        // ツールを非表示
-        if (toolHolder != null) toolHolder.HideTool();
+        // ツールをしまう時間を待つため、ステートをPuttingAwayにする
+        SetState(NPCState.PuttingAway);
+        putAwayTimer = 2.0f;
 
-        SetState(NPCState.Idle);
         HideMarker();
+
+        // TaskManagerに完了報告（次のタスクの自動割り当てをトリガー）
+        if (TaskManager.Instance != null)
+        {
+            TaskManager.Instance.ReportTaskComplete(this);
+        }
+    }
+
+    /// <summary>
+    /// TaskManagerからのキャンセル指示。採取を中断してIdleに戻る。
+    /// StopGathering とは異なり、TaskManagerへの報告は行わない（呼び出し元がTaskManagerのため）。
+    /// ただし次のタスクへの自動割り当ては行う。
+    /// </summary>
+    public void CancelGathering()
+    {
+        targetNode = null;
+        agent.isStopped = true;
+        if (animController != null) animController.StopAction();
+        
+        SetState(NPCState.PuttingAway);
+        putAwayTimer = 2.0f;
+        
+        HideMarker();
+        pendingMoveDestination = null;
+        pendingGatherNode = null;
     }
 
     private void StopGatheringImmediate()
@@ -357,9 +382,6 @@ public class NPCController : MonoBehaviour
         // 採取アニメーションを停止
         if (animController != null) animController.StopAction();
 
-        // ツールをしまう
-        if (toolHolder != null) toolHolder.HideTool();
-
         targetNode = null;
         agent.isStopped = true;
 
@@ -382,6 +404,9 @@ public class NPCController : MonoBehaviour
     {
         putAwayTimer -= Time.deltaTime;
         if (putAwayTimer > 0f) return;
+
+        // タイマー完了 → ツールを非表示にする
+        if (toolHolder != null) toolHolder.HideTool();
 
         // タイマー完了 → バッファした行動を実行
         SetState(NPCState.Idle); // 一旦Idleに戻す（再帰呼び出し対策）

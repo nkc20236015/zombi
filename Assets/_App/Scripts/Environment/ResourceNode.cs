@@ -42,6 +42,8 @@ public class ResourceNode : MonoBehaviour
     private bool isFalling = false; // 倒木中フラグ（二重実行防止）
     private Vector2Int gridPos;
     private bool hasGridPos = false;
+    private TaskMarker taskMarker;
+    private HoverHighlight hoverHighlight;
 
     public void SetGridPosition(Vector2Int gp)
     {
@@ -54,6 +56,34 @@ public class ResourceNode : MonoBehaviour
         CurrentAmount = maxAmount;
         originalScale = transform.localScale;
         originalRotation = transform.localRotation;
+    }
+
+    void Start()
+    {
+        // HoverHighlightコンポーネントを動的に追加
+        if (GetComponent<HoverHighlight>() == null)
+        {
+            hoverHighlight = gameObject.AddComponent<HoverHighlight>();
+        }
+
+        // TaskMarkerの作成と初期化
+        GameObject markerObj = new GameObject("TaskMarker");
+        markerObj.transform.SetParent(transform);
+        // 少し上に配置
+        markerObj.transform.localPosition = new Vector3(0, 3.0f, 0);
+        // スケールを小さくする
+        markerObj.transform.localScale = new Vector3(0.3f, 0.3f, 0.3f);
+        
+        taskMarker = markerObj.AddComponent<TaskMarker>();
+        taskMarker.SetVisible(false);
+    }
+
+    public void SetTaskMarker(bool isVisible)
+    {
+        if (taskMarker != null)
+        {
+            taskMarker.SetVisible(isVisible);
+        }
     }
 
     /// <summary>
