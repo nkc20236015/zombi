@@ -54,13 +54,27 @@ public class NPCAnimationController : MonoBehaviour
 
     /// <summary>
     /// Stops the current action and resets triggers.
+    /// CrossFadeで確実にIdleへ遷移させる。
     /// </summary>
     public void StopAction()
     {
         isPerformingAction = false;
         animator.ResetTrigger(actionTriggerHash);
-        // ActionType を -1 にリセットすることで、Chop/Mine → Idle 遷移を発火
         animator.SetInteger(actionTypeHash, -1);
+        // Animator Controllerの遷移条件に依存せず、確実にIdleへ戻す
+        animator.CrossFade("Idle", 0.25f);
+    }
+
+    /// <summary>
+    /// ツールをしまうアニメーション（PutItem）を再生する。
+    /// PuttingAwayステートの開始時に呼ばれる。
+    /// </summary>
+    public void PlayPutAway()
+    {
+        isPerformingAction = false;
+        animator.ResetTrigger(actionTriggerHash);
+        animator.SetInteger(actionTypeHash, -1);
+        animator.CrossFade("PutItem", 0.25f);
     }
 
     // Animation Event Receivers

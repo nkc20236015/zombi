@@ -332,7 +332,7 @@ public class NPCController : MonoBehaviour
             agent.ResetPath();
             agent.velocity = Vector3.zero;
         }
-        if (animController != null) animController.StopAction();
+        if (animController != null) animController.PlayPutAway();
 
         // ツールをしまう時間を待つため、ステートをPuttingAwayにする
         SetState(NPCState.PuttingAway);
@@ -361,7 +361,7 @@ public class NPCController : MonoBehaviour
             agent.ResetPath();
             agent.velocity = Vector3.zero;
         }
-        if (animController != null) animController.StopAction();
+        if (animController != null) animController.PlayPutAway();
         
         SetState(NPCState.PuttingAway);
         putAwayTimer = 2.0f;
@@ -390,8 +390,8 @@ public class NPCController : MonoBehaviour
     /// </summary>
     private void BeginPutAway(Vector3? moveDestination, ResourceNode gatherNode)
     {
-        // 採取アニメーションを停止
-        if (animController != null) animController.StopAction();
+        // 採取アニメーションを停止し、ツールをしまうアニメーションを再生
+        if (animController != null) animController.PlayPutAway();
 
         targetNode = null;
         agent.isStopped = true;
@@ -421,7 +421,8 @@ public class NPCController : MonoBehaviour
         putAwayTimer -= Time.deltaTime;
         if (putAwayTimer > 0f) return;
 
-        // タイマー完了 → バッファした行動を実行
+        // タイマー完了 → ツールをしまってからバッファした行動を実行
+        if (toolHolder != null) toolHolder.HideTool();
         SetState(NPCState.Idle); // 一旦Idleに戻す（再帰呼び出し対策）
 
         if (pendingGatherNode != null && pendingGatherNode.HasResources)
