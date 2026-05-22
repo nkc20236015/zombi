@@ -192,7 +192,8 @@ public class CameraOccluder : MonoBehaviour
             info.currentAlpha = Mathf.MoveTowards(info.currentAlpha, targetAlpha, fadeSpeed * Time.deltaTime);
 
             Material[] mats = info.renderer.materials;
-            for (int i = 0; i < mats.Length; i++)
+            int count = Mathf.Min(mats.Length, info.originalColors.Length);
+            for (int i = 0; i < count; i++)
             {
                 if (info.currentAlpha < 0.99f)
                 {

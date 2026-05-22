@@ -114,6 +114,9 @@ public class GridManager : MonoBehaviour
         if (!IsValidPosition(gp)) return false;
         if (cells[gp.x, gp.y].State != CellState.Empty) return false;
 
+        // ドロップアイテムがあるマスには建築不可
+        if (ItemDropManager.Instance != null && ItemDropManager.Instance.HasItemAt(gp)) return false;
+
         // 全てのNPCが立っているセルには設置不可
         if (GameManager.Instance != null && GameManager.Instance.NPCs != null)
         {

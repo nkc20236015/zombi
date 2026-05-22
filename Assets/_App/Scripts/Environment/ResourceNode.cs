@@ -9,7 +9,8 @@ public class ResourceNode : MonoBehaviour
 {
     [Header("Resource Settings")]
     [SerializeField] private ResourceType resourceType = ResourceType.Wood;
-    [SerializeField] private int maxAmount = 50;
+    [SerializeField] private int minYield = 40;
+    [SerializeField] private int maxYield = 60;
     [SerializeField] private int harvestAmountPerAction = 5; // 1回の採取で得られる量
 
     [Header("Visual - 岩など（Wood以外）")]
@@ -31,11 +32,14 @@ public class ResourceNode : MonoBehaviour
     /// <summary>資源が残っているか</summary>
     public bool HasResources => CurrentAmount > 0;
 
+    /// <summary>このノードが生成する総資源量</summary>
+    public int ActualYield { get; private set; }
+
     /// <summary>1回の採取で得られる量</summary>
     public int HarvestAmount => harvestAmountPerAction;
 
     /// <summary>NPCが停止して採取を開始する距離</summary>
-    public float InteractionRange => 2.0f;
+    public float InteractionRange => 1.0f;
 
     private Vector3 originalScale;
     private Quaternion originalRotation;
@@ -49,9 +53,10 @@ public class ResourceNode : MonoBehaviour
         hasGridPos = true;
     }
 
-void Awake()
+    void Awake()
     {
-        CurrentAmount = maxAmount;
+        ActualYield = Random.Range(minYield, maxYield + 1);
+        CurrentAmount = ActualYield;
         originalScale = transform.localScale;
         originalRotation = transform.localRotation;
     }
@@ -158,7 +163,7 @@ private TaskMarker taskMarker;
     private void HarvestNonTree()
     {
         // 残量に応じてスケールを変化（視覚フィードバック）
-        float ratio = (float)CurrentAmount / maxAmount;
+        float ratio = (float)CurrentAmount / ActualYield;
         float scaleFactor = Mathf.Lerp(depletedScale, 1f, ratio);
         transform.localScale = originalScale * scaleFactor;
 
@@ -219,6 +224,14 @@ private TaskMarker taskMarker;
             .OnComplete(() =>
             {
                 Debug.Log($"[ResourceNode] {gameObject.name} has been depleted!");
+                
+                // 木が倒れたタイミングで、地面に木材をドロップする
+                if (resourceType == ResourceType.Wood && ItemDropManager.Instance != null && GridManager.Instance != null)
+                {
+                    Vector2Int dropPos = hasGridPos ? gridPos : GridManager.Instance.WorldToGrid(transform.position);
+                    ItemDropManager.Instance.DropWood(dropPos, ActualYield);
+                }
+
                 // 倒れた後、少し待ってから非アクティブにする
                 DOVirtual.DelayedCall(disappearDelay, () =>
                 {

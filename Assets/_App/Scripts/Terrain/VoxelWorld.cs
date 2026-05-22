@@ -12,8 +12,8 @@ public class VoxelWorld : MonoBehaviour
     public static VoxelWorld Instance { get; private set; }
 
     [Header("World Settings")]
-    [SerializeField] private int worldWidthInBlocks = 100;
-    [SerializeField] private int worldDepthInBlocks = 100;
+    [SerializeField] private int worldWidthInBlocks = 150;
+    [SerializeField] private int worldDepthInBlocks = 150;
     [SerializeField] private int worldHeightInBlocks = 8;
 
     [Header("Terrain Generation")]
@@ -26,12 +26,28 @@ public class VoxelWorld : MonoBehaviour
     [Header("Materials")]
     [SerializeField] private Material[] blockMaterials;
 
+    [Header("Grass Gradient")]
+    [SerializeField] private float grassNoiseScale = 0.05f;
+    [SerializeField] private float grassDetailScale = 0.15f;
+    [SerializeField] private float dirtNoiseScale = 0.1f;
+    [SerializeField] private float dirtThreshold = 0.62f;
+    [SerializeField] private int treeFootprintRadius = 2;
+
     [Header("NavMesh")]
     [SerializeField] private NavMeshSurface navMeshSurface;
+
+    [Header("Trees (Procedural Generation)")]
+    [SerializeField] private GameObject[] treePrefabs;
+    [SerializeField] private float treeDensityNoiseScale = 0.03f;
+    [SerializeField] private float treeSpawnThreshold = 0.55f; // ノイズ値がこれを超えたら森エリア
+    [SerializeField] private float treeSpawnProbability = 0.1f; // 森エリア内の各マスで木が生える確率
 
     private BlockType[,,] worldBlocks;
     private VoxelChunk[,,] chunks;
     private int chunksX, chunksY, chunksZ;
+
+    // 草の頂点カラーマップ (R=草明暗, G=土露出度)
+    private Color[,] grassColorMap;
 
     public int WorldWidth => worldWidthInBlocks;
     public int WorldDepth => worldDepthInBlocks;
@@ -96,9 +112,12 @@ public class VoxelWorld : MonoBehaviour
         DestroyAllChunks();
         worldBlocks = new BlockType[worldWidthInBlocks, worldHeightInBlocks, worldDepthInBlocks];
         PopulateTerrain();
+        PopulateTrees();
+        GenerateGrassColorMap();
         InstantiateChunks();
         RefreshNavMesh();
         RepositionSceneObjects();
+        ApplyTreeFootprints();
         Debug.Log($"[VoxelWorld] ワールド生成完了: {worldWidthInBlocks}x{worldHeightInBlocks}x{worldDepthInBlocks}");
     }
 
@@ -215,6 +234,79 @@ public class VoxelWorld : MonoBehaviour
                 }
             }
         }
+    }
+
+    /// <summary>
+    /// 地形生成後、森エリアをノイズで判定して木を自動生成する。
+    /// </summary>
+    private void PopulateTrees()
+    {
+        if (treePrefabs == null || treePrefabs.Length == 0) return;
+
+        // 既存の木（エディタで手動配置されたものなど）はそのまま残すか？
+        // 今回は自動生成のみをメインとするため、一旦そのまま残しつつ空きマスに生成する
+
+        float forestOffsetX = seed * 5.1f + 1000f;
+        float forestOffsetZ = seed * 7.3f + 1000f;
+
+        // すでにシーンにある手動配置の木やNPCなどの位置を一旦取得しておく（重複を防ぐため）
+        ResourceNode[] existingNodes = FindObjectsByType<ResourceNode>(FindObjectsSortMode.None);
+        System.Collections.Generic.HashSet<Vector2Int> occupiedPositions = new System.Collections.Generic.HashSet<Vector2Int>();
+        foreach (var node in existingNodes)
+        {
+            int bx = Mathf.FloorToInt(node.transform.position.x / VoxelData.BlockWidth);
+            int bz = Mathf.FloorToInt(node.transform.position.z / VoxelData.BlockDepth);
+            occupiedPositions.Add(new Vector2Int(bx, bz));
+        }
+
+        // マップ中央付近（初期スポーン位置）は木を生やさない（空き地にする）
+        Vector2Int center = new Vector2Int(worldWidthInBlocks / 2, worldDepthInBlocks / 2);
+        int safeRadius = 10; // 中央から半径10マスは木なし
+
+        Transform treesParent = new GameObject("Trees").transform;
+        treesParent.parent = transform;
+
+        for (int x = 0; x < worldWidthInBlocks; x++)
+        {
+            for (int z = 0; z < worldDepthInBlocks; z++)
+            {
+                // 中央セーフゾーンの除外
+                if (Vector2Int.Distance(new Vector2Int(x, z), center) < safeRadius) continue;
+
+                // 既に何かあるマスの除外
+                if (occupiedPositions.Contains(new Vector2Int(x, z))) continue;
+
+                // 森ノイズの判定
+                float forestNoise = Mathf.PerlinNoise(
+                    (x + forestOffsetX) * treeDensityNoiseScale,
+                    (z + forestOffsetZ) * treeDensityNoiseScale
+                );
+
+                if (forestNoise > treeSpawnThreshold)
+                {
+                    // 森エリア内なら一定確率で木を配置
+                    if (Random.value < treeSpawnProbability)
+                    {
+                        GameObject prefab = treePrefabs[Random.Range(0, treePrefabs.Length)];
+                        if (prefab == null) continue;
+
+                        float surfaceY = GetSurfaceWorldY(x * VoxelData.BlockWidth, z * VoxelData.BlockDepth);
+                        Vector3 spawnPos = new Vector3(
+                            x * VoxelData.BlockWidth + VoxelData.BlockWidth * 0.5f,
+                            surfaceY,
+                            z * VoxelData.BlockDepth + VoxelData.BlockDepth * 0.5f
+                        );
+
+                        GameObject newTree = Instantiate(prefab, spawnPos, Quaternion.Euler(0, Random.Range(0f, 360f), 0), treesParent);
+                        newTree.name = $"Tree_{x}_{z}";
+                        
+                        occupiedPositions.Add(new Vector2Int(x, z));
+                    }
+                }
+            }
+        }
+
+        Debug.Log("[VoxelWorld] 木の自動生成が完了しました。");
     }
 
     /// <summary>
@@ -380,5 +472,110 @@ public class VoxelWorld : MonoBehaviour
         }
         for (int i = transform.childCount - 1; i >= 0; i--)
             Destroy(transform.GetChild(i).gameObject);
+    }
+
+    // ==================== Grass Color Map ====================
+
+    /// <summary>
+    /// Perlinノイズで草のグラデーションマップを生成する。
+    /// R = 草の明暗 (0=暗い, 0.5=通常, 1=明るい)
+    /// G = 土の露出度 (0=草のみ, 1=完全に土)
+    /// </summary>
+    private void GenerateGrassColorMap()
+    {
+        grassColorMap = new Color[worldWidthInBlocks, worldDepthInBlocks];
+
+        float grassOffsetX = seed * 1.7f;
+        float grassOffsetZ = seed * 2.3f;
+        float dirtOffsetX = seed * 3.1f + 500f;
+        float dirtOffsetZ = seed * 4.7f + 500f;
+
+        for (int x = 0; x < worldWidthInBlocks; x++)
+        {
+            for (int z = 0; z < worldDepthInBlocks; z++)
+            {
+                // 草の明暗 (フラクタルノイズ: 大きな波 + 細かい波)
+                float grassLarge = Mathf.PerlinNoise(
+                    (x + grassOffsetX) * grassNoiseScale,
+                    (z + grassOffsetZ) * grassNoiseScale
+                );
+                float grassDetail = Mathf.PerlinNoise(
+                    (x + grassOffsetX) * grassDetailScale,
+                    (z + grassOffsetZ) * grassDetailScale
+                );
+                float grassR = Mathf.Clamp01(grassLarge * 0.7f + grassDetail * 0.3f);
+
+                // 土の露出度
+                float dirtNoise = Mathf.PerlinNoise(
+                    (x + dirtOffsetX) * dirtNoiseScale,
+                    (z + dirtOffsetZ) * dirtNoiseScale
+                );
+                // しきい値を超えた部分だけ土が露出する（スムーズに遷移）
+                float dirtG = Mathf.Clamp01((dirtNoise - dirtThreshold) / (1f - dirtThreshold));
+                dirtG *= dirtG; // 二乗して、ほとんどの場所を草にし、一部だけ土を出す
+
+                grassColorMap[x, z] = new Color(grassR, dirtG, 0f, 1f);
+            }
+        }
+    }
+
+    /// <summary>
+    /// 木の根元周辺の土露出度を高くする。
+    /// RepositionSceneObjects後に呼ばれる（木の位置が確定した後）。
+    /// </summary>
+    private void ApplyTreeFootprints()
+    {
+        if (grassColorMap == null) return;
+
+        ResourceNode[] resources = FindObjectsByType<ResourceNode>(FindObjectsSortMode.None);
+        foreach (var res in resources)
+        {
+            if (res.Type != ResourceType.Wood) continue;
+
+            Vector3 pos = res.transform.position;
+            int cx = Mathf.FloorToInt(pos.x / VoxelData.BlockWidth);
+            int cz = Mathf.FloorToInt(pos.z / VoxelData.BlockDepth);
+
+            for (int dx = -treeFootprintRadius; dx <= treeFootprintRadius; dx++)
+            {
+                for (int dz = -treeFootprintRadius; dz <= treeFootprintRadius; dz++)
+                {
+                    int tx = cx + dx;
+                    int tz = cz + dz;
+                    if (tx < 0 || tx >= worldWidthInBlocks || tz < 0 || tz >= worldDepthInBlocks) continue;
+
+                    float dist = Mathf.Sqrt(dx * dx + dz * dz);
+                    if (dist > treeFootprintRadius) continue;
+
+                    // 中心に近いほど土が強い
+                    float strength = 1f - (dist / (treeFootprintRadius + 0.5f));
+                    strength = Mathf.Clamp01(strength * 0.8f); // 最大0.8まで（完全な土にはしない）
+
+                    Color c = grassColorMap[tx, tz];
+                    c.g = Mathf.Max(c.g, strength);
+                    grassColorMap[tx, tz] = c;
+                }
+            }
+        }
+
+        // 木の根元を反映した後、影響を受けたチャンクを再構築
+        if (chunks != null)
+        {
+            foreach (var chunk in chunks)
+            {
+                if (chunk != null) chunk.RebuildMesh();
+            }
+        }
+    }
+
+    /// <summary>
+    /// 指定ブロック座標の草カラーを返す。VoxelChunkから呼ばれる。
+    /// </summary>
+    public Color GetGrassColor(int blockX, int blockZ)
+    {
+        if (grassColorMap == null) return new Color(0.5f, 0f, 0f, 1f);
+        if (blockX < 0 || blockX >= worldWidthInBlocks || blockZ < 0 || blockZ >= worldDepthInBlocks)
+            return new Color(0.5f, 0f, 0f, 1f);
+        return grassColorMap[blockX, blockZ];
     }
 }

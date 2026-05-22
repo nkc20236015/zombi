@@ -117,11 +117,11 @@ public class NPCController : MonoBehaviour
         {
             if (!agent.hasPath || agent.velocity.sqrMagnitude == 0f)
             {
-                // 実際の目的地に到達しているか（壁で止まった場合のチェック）
-                float distanceToDest = Vector3.Distance(transform.position, agent.destination);
-                if (distanceToDest > agent.stoppingDistance + 1.0f)
+                // 実際の目的オブジェクトに十分に近づけたかをチェック（壁や障害物で遠くで止まった場合を防ぐ）
+                float actualDistToTarget = Vector3.Distance(transform.position, targetNode.transform.position);
+                if (actualDistToTarget > targetNode.InteractionRange + 1.5f)
                 {
-                    Debug.Log($"[NPCController] 到達不能: 経路が塞がれています。");
+                    Debug.Log($"[NPCController] 到達不能: 目標に十分に近づけませんでした。（実際の距離: {actualDistToTarget}）");
                     StopGathering();
                     return;
                 }
@@ -169,7 +169,11 @@ public class NPCController : MonoBehaviour
             int harvested = targetNode.Harvest();
             if (harvested > 0 && ResourceManager.Instance != null)
             {
-                ResourceManager.Instance.AddResource(targetNode.Type, harvested);
+                // 木材は伐採完了時に地面にドロップするため、直接加算しない
+                if (targetNode.Type != ResourceType.Wood)
+                {
+                    ResourceManager.Instance.AddResource(targetNode.Type, harvested);
+                }
             }
 
             // 再度タイマーリセットしてアニメーション再生

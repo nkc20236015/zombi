@@ -1304,14 +1304,30 @@ MonoBehaviour:
   noiseScale: 0.08
   noiseAmplitude: 0
   dirtLayerDepth: 3
-  seed: 0
+  seed: 7
   blockMaterials:
-  - {fileID: 2100000, guid: d0045273f2fd3a3498f17c296d5ca8dd, type: 2}
+  - {fileID: 2100000, guid: a076568a1d6a884409024eaa4e7d4cc9, type: 2}
   - {fileID: 2100000, guid: c90c910f4eea8324bbcd8f444b4cc160, type: 2}
   - {fileID: 2100000, guid: 93d45a19256795145a61de4bfe206f26, type: 2}
   - {fileID: 2100000, guid: 1762aa3447a38ac4bb17ca902e049a38, type: 2}
   - {fileID: 2100000, guid: 21f176000372f4940a8c865b9a39d5eb, type: 2}
+  grassNoiseScale: 0.05
+  grassDetailScale: 0.15
+  dirtNoiseScale: 0.1
+  dirtThreshold: 0.62
+  treeFootprintRadius: 2
   navMeshSurface: {fileID: 418328775}
+  treePrefabs:
+  - {fileID: 7818243508390451928, guid: 9792fe0d4c78aa646a24a0ef67ce23ec, type: 3}
+  - {fileID: 8096116535752992243, guid: 1baf8721fe8c5004d88dc4ed689f33f1, type: 3}
+  - {fileID: 2068810509990423090, guid: 62a7486d9f7821c4dbf0b1f0ec6d7304, type: 3}
+  - {fileID: 9045607283342952840, guid: d8a7a47b3502f6f4e8c7e9053017e96f, type: 3}
+  - {fileID: 3729203537726544105, guid: 8b58e19788549334596c08ad3f15a6b7, type: 3}
+  - {fileID: 595069361496157734, guid: e9035f61e03715342941f447891c8c93, type: 3}
+  - {fileID: 1303282682881793742, guid: 1c34ba1896b040b4f9c827409227bb35, type: 3}
+  treeDensityNoiseScale: 0.03
+  treeSpawnThreshold: 0.55
+  treeSpawnProbability: 0.1
 --- !u!4 &418328777
 Transform:
   m_ObjectHideFlags: 0
@@ -2844,6 +2860,7 @@ GameObject:
   - component: {fileID: 685504456}
   - component: {fileID: 685504457}
   - component: {fileID: 685504458}
+  - component: {fileID: 685504459}
   m_Layer: 0
   m_Name: GameManager
   m_TagString: Untagged
@@ -2999,6 +3016,23 @@ MonoBehaviour:
   cursorRoot: {fileID: 0}
   mainCursorImage: {fileID: 0}
   subIconImage: {fileID: 0}
+--- !u!114 &685504459
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 685504450}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c5d97aab81621204681623e55181494f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  maxWoodPerStack: 200
+  woodPrefab1: {fileID: 9102797074184260072, guid: 2ad7276e933c6384899a7fd73f27cf31, type: 3}
+  woodPrefab2: {fileID: 261095927697780909, guid: 377306549a996304eac0ac57658614cb, type: 3}
+  woodPrefab3: {fileID: 678537774679406739, guid: 36d1af425917517438886bd0b133dc78, type: 3}
+  woodPrefab4: {fileID: 2540780491614282155, guid: a4a2cd122d0e22248ab83eb63a5ff2fa, type: 3}
 --- !u!1 &716177817
 GameObject:
   m_ObjectHideFlags: 0
