@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: fe67854067eaf714c940df90ecd532e2
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 9100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 169445
+  packageName: Animated Trees Package
+  packageVersion: 1.04
+  assetPath: Assets/Animated Trees Package/Models/Pines/pine_4.controller
+  uploadId: 793414

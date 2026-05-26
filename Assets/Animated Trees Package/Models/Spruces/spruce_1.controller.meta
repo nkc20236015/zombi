@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 0da600a91aa99e14eb2e70f4c73b8aed
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 9100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 169445
+  packageName: Animated Trees Package
+  packageVersion: 1.04
+  assetPath: Assets/Animated Trees Package/Models/Spruces/spruce_1.controller
+  uploadId: 793414

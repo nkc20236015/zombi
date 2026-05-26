@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: 4d660fe3caf00be4e8e07768266b4aaf
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 169445
+  packageName: Animated Trees Package
+  packageVersion: 1.04
+  assetPath: Assets/Animated Trees Package/DemoSceneContent/Controller.cs
+  uploadId: 793414

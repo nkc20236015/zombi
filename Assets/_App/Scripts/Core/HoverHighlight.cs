@@ -1,17 +1,25 @@
 using UnityEngine;
 
 /// <summary>
-/// マウスホバー時にオブジェクトをハイライト（アウトライン表示など）するコンポーネント。
-/// Collider がアタッチされているオブジェクトで動作します。
+/// マウスホバー時にオブジェクトをハイライト（アウトライン表示）するコンポーネント。
+/// モードに応じて表示を変える:
+/// - 伐採モード: 黄色の細いアウトライン
+/// - その他: 薄い白のアウトライン（控えめ）
 /// </summary>
 public class HoverHighlight : MonoBehaviour
 {
-    [SerializeField] private Color highlightColor = new Color(1f, 1f, 0.5f, 0.5f);
-    [SerializeField] private float outlineWidth = 0.0015f;
+    [Header("Harvest Mode Highlight")]
+    [SerializeField] private Color harvestHighlightColor = new Color(1f, 0.9f, 0.3f, 0.6f);
+    [SerializeField] private float harvestOutlineWidth = 0.001f;
+
+    [Header("Normal Mode Highlight")]
+    [SerializeField] private Color normalHighlightColor = new Color(1f, 1f, 1f, 0.25f);
+    [SerializeField] private float normalOutlineWidth = 0.0005f;
     
     private Renderer[] renderers;
     private Material[][] originalMaterials;
-    private Material outlineMaterial;
+    private Material outlineMaterialHarvest;
+    private Material outlineMaterialNormal;
 
     private bool isHovered = false;
 
@@ -25,13 +33,18 @@ public class HoverHighlight : MonoBehaviour
         renderers = GetComponentsInChildren<Renderer>();
         originalMaterials = new Material[renderers.Length][];
 
-        // カスタムのアウトラインシェーダーを取得
         Shader outlineShader = Shader.Find("Custom/Outline");
         if (outlineShader != null)
         {
-            outlineMaterial = new Material(outlineShader);
-            outlineMaterial.SetColor("_OutlineColor", highlightColor);
-            outlineMaterial.SetFloat("_OutlineWidth", outlineWidth);
+            // 伐採モード用 - 黄色の細いアウトライン
+            outlineMaterialHarvest = new Material(outlineShader);
+            outlineMaterialHarvest.SetColor("_OutlineColor", harvestHighlightColor);
+            outlineMaterialHarvest.SetFloat("_OutlineWidth", harvestOutlineWidth);
+
+            // 通常モード用 - 薄白の控えめなアウトライン
+            outlineMaterialNormal = new Material(outlineShader);
+            outlineMaterialNormal.SetColor("_OutlineColor", normalHighlightColor);
+            outlineMaterialNormal.SetFloat("_OutlineWidth", normalOutlineWidth);
         }
 
         for (int i = 0; i < renderers.Length; i++)
@@ -42,11 +55,9 @@ public class HoverHighlight : MonoBehaviour
 
     void OnMouseEnter()
     {
-        // 建築モードなどの特別なモードではハイライトしないなどの制御が必要であれば追加可能
         if (GameManager.Instance != null && GameManager.Instance.CurrentPlayerMode == PlayerMode.Building)
             return;
 
-        // UIの上をクリック・ホバーしている場合は無視
         if (UnityEngine.EventSystems.EventSystem.current != null &&
             UnityEngine.EventSystems.EventSystem.current.IsPointerOverGameObject()) return;
 
@@ -63,7 +74,20 @@ public class HoverHighlight : MonoBehaviour
         if (isHovered == enable) return;
         isHovered = enable;
 
-        if (renderers == null || outlineMaterial == null) return;
+        if (renderers == null) return;
+
+        // モードに応じてマテリアルを選択
+        Material outlineMat = null;
+        if (GameManager.Instance != null && GameManager.Instance.CurrentPlayerMode == PlayerMode.Gathering)
+        {
+            outlineMat = outlineMaterialHarvest;
+        }
+        else
+        {
+            outlineMat = outlineMaterialNormal;
+        }
+
+        if (outlineMat == null) return;
 
         for (int i = 0; i < renderers.Length; i++)
         {
@@ -71,15 +95,13 @@ public class HoverHighlight : MonoBehaviour
             
             if (enable)
             {
-                // オリジナルマテリアル + アウトラインマテリアルを結合
                 Material[] newMats = new Material[baseMats.Length + 1];
                 for (int j = 0; j < baseMats.Length; j++) newMats[j] = baseMats[j];
-                newMats[baseMats.Length] = outlineMaterial;
+                newMats[baseMats.Length] = outlineMat;
                 renderers[i].materials = newMats;
             }
             else
             {
-                // 元に戻す
                 renderers[i].materials = baseMats;
             }
         }

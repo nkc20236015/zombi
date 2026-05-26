@@ -124,25 +124,11 @@ public class VoxelChunk : MonoBehaviour
             uvsBuffer.Add(fuv[0]); uvsBuffer.Add(fuv[1]);
             uvsBuffer.Add(fuv[2]); uvsBuffer.Add(fuv[3]);
 
-            // 頂点カラー: 草の上面のみノイズ値を設定、それ以外は白
-            if (tile == TextureTileIndex.GrassTop && face == 2 && world != null)
-            {
-                // ワールド座標でのブロック位置
-                int wx = ChunkPosition.x + x;
-                int wz = ChunkPosition.z + z;
-                Color grassCol = world.GetGrassColor(wx, wz);
-                vertColors.Add(grassCol);
-                vertColors.Add(grassCol);
-                vertColors.Add(grassCol);
-                vertColors.Add(grassCol);
-            }
-            else
-            {
-                vertColors.Add(Color.white);
-                vertColors.Add(Color.white);
-                vertColors.Add(Color.white);
-                vertColors.Add(Color.white);
-            }
+            // 頂点カラーは白
+            vertColors.Add(Color.white);
+            vertColors.Add(Color.white);
+            vertColors.Add(Color.white);
+            vertColors.Add(Color.white);
         }
     }
 

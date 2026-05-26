@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: 22ffdce6ea099fa4aa8e3536b90a3176
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 169445
+  packageName: Animated Trees Package
+  packageVersion: 1.04
+  assetPath: Assets/Animated Trees Package/DemoSceneContent/CameraPosition.cs
+  uploadId: 793414

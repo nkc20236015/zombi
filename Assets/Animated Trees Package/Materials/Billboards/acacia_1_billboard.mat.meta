@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: a1a1243fb14c0ae41a5d27ff9235b1d8
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 2100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 169445
+  packageName: Animated Trees Package
+  packageVersion: 1.04
+  assetPath: Assets/Animated Trees Package/Materials/Billboards/acacia_1_billboard.mat
+  uploadId: 793414
