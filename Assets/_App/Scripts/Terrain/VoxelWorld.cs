@@ -55,7 +55,7 @@ public class VoxelWorld : MonoBehaviour
     [SerializeField] private TreeSpeciesGroup[] treeSpeciesGroups;
     [SerializeField] private float treeDensityNoiseScale = 0.03f;
     [SerializeField] private float treeSpawnThreshold = 0.50f;
-    [SerializeField] private float treeSpawnProbability = 0.12f;
+    [SerializeField] private float treeSpawnProbability = 0.08f;
     [SerializeField] private float speciesNoiseScale = 0.015f; // 種族ゾーンの大きさ
     [SerializeField] private int safeRadius = 10;
 
@@ -83,6 +83,11 @@ public class VoxelWorld : MonoBehaviour
         if (existingTerrain != null)
         {
             generatedTerrain = existingTerrain.GetComponent<Terrain>();
+            if (generatedTerrain != null)
+            {
+                generatedTerrainData = generatedTerrain.terrainData;
+            }
+            
             // 内部データだけ初期化しておく
             worldBlocks = new BlockType[worldWidthInBlocks, worldHeightInBlocks, worldDepthInBlocks];
             PopulateBlockData();
@@ -157,7 +162,11 @@ public class VoxelWorld : MonoBehaviour
         terrainObj.hideFlags = HideFlags.None;
 
         generatedTerrain = terrainObj.GetComponent<Terrain>();
-        generatedTerrain.materialTemplate = null; // URP default terrain material
+        // URP の Terrain Lit マテリアルを使用
+        if (UnityEngine.Rendering.GraphicsSettings.currentRenderPipeline != null)
+        {
+            generatedTerrain.materialTemplate = UnityEngine.Rendering.GraphicsSettings.currentRenderPipeline.defaultTerrainMaterial;
+        }
 
         // パフォーマンス設定
         generatedTerrain.heightmapPixelError = 5;
@@ -216,7 +225,8 @@ public class VoxelWorld : MonoBehaviour
         layer.name = name;
         if (diffuse != null) layer.diffuseTexture = diffuse;
         if (normal != null) layer.normalMapTexture = normal;
-        if (mask != null) layer.maskMapTexture = mask;
+        // マスクマップ(Aチャンネル)によって地面がプラスチックのようにテカるのを防ぐため、意図的に無効化
+        // if (mask != null) layer.maskMapTexture = mask;
         layer.tileSize = new Vector2(tileSize, tileSize);
         layer.tileOffset = Vector2.zero;
         layer.smoothness = 0f;
@@ -334,11 +344,31 @@ public class VoxelWorld : MonoBehaviour
 
     private void PopulateTrees()
     {
-        if (treeSpeciesGroups == null || treeSpeciesGroups.Length == 0) return;
+        if (treeSpeciesGroups == null || treeSpeciesGroups.Length == 0 || generatedTerrainData == null) return;
+
+        // 全てのプレハブを集めてTreePrototypesに登録する
+        List<TreePrototype> prototypes = new List<TreePrototype>();
+        Dictionary<GameObject, int> prefabToPrototypeIndex = new Dictionary<GameObject, int>();
+
+        foreach (var group in treeSpeciesGroups)
+        {
+            if (group.prefabs == null) continue;
+            foreach (var prefab in group.prefabs)
+            {
+                if (prefab != null && !prefabToPrototypeIndex.ContainsKey(prefab))
+                {
+                    TreePrototype proto = new TreePrototype();
+                    proto.prefab = prefab;
+                    int index = prototypes.Count;
+                    prototypes.Add(proto);
+                    prefabToPrototypeIndex[prefab] = index;
+                }
+            }
+        }
+        generatedTerrainData.treePrototypes = prototypes.ToArray();
 
         HashSet<Vector2Int> occupiedPositions = new HashSet<Vector2Int>();
-
-        // 既存のResourceNodeの位置を登録
+        // 既存のResourceNodeの位置を登録（手動配置分など）
         ResourceNode[] existingNodes = FindObjectsByType<ResourceNode>(FindObjectsSortMode.None);
         foreach (var node in existingNodes)
         {
@@ -349,13 +379,9 @@ public class VoxelWorld : MonoBehaviour
 
         Vector2Int center = new Vector2Int(worldWidthInBlocks / 2, worldDepthInBlocks / 2);
 
-        // 既存の Trees 子オブジェクトを削除
+        // 既存の Trees 子オブジェクトを削除（アプローチ3では不要ですが念のため残骸を消す）
         Transform existingTreesParent = transform.Find("Trees");
-        if (existingTreesParent != null) Destroy(existingTreesParent.gameObject);
-
-        Transform treesParent = new GameObject("Trees").transform;
-        treesParent.parent = transform;
-        treesParent.gameObject.hideFlags = HideFlags.None;
+        if (existingTreesParent != null) DestroyImmediate(existingTreesParent.gameObject);
 
         float forestOffsetX = seed * 5.1f + 1000f;
         float forestOffsetZ = seed * 7.3f + 1000f;
@@ -370,6 +396,7 @@ public class VoxelWorld : MonoBehaviour
         }
 
         int treeCount = 0;
+        List<TreeInstance> treeInstancesList = new List<TreeInstance>();
 
         for (int x = 0; x < worldWidthInBlocks; x++)
         {
@@ -377,6 +404,19 @@ public class VoxelWorld : MonoBehaviour
             {
                 if (Vector2Int.Distance(new Vector2Int(x, z), center) < safeRadius) continue;
                 if (occupiedPositions.Contains(new Vector2Int(x, z))) continue;
+
+                // 隣接チェック：8方向に木があるなら置かない
+                bool hasNeighbor = false;
+                for (int dx = -1; dx <= 1 && !hasNeighbor; dx++)
+                {
+                    for (int dz = -1; dz <= 1 && !hasNeighbor; dz++)
+                    {
+                        if (dx == 0 && dz == 0) continue;
+                        if (occupiedPositions.Contains(new Vector2Int(x + dx, z + dz)))
+                            hasNeighbor = true;
+                    }
+                }
+                if (hasNeighbor) continue;
 
                 // 森ノイズ
                 float forestNoise = Mathf.PerlinNoise(
@@ -406,26 +446,75 @@ public class VoxelWorld : MonoBehaviour
                 if (group.prefabs == null || group.prefabs.Length == 0) continue;
 
                 GameObject prefab = group.prefabs[Random.Range(0, group.prefabs.Length)];
-                if (prefab == null) continue;
+                if (prefab == null || !prefabToPrototypeIndex.ContainsKey(prefab)) continue;
 
-                float surfaceY = GetSurfaceWorldY(x + 0.5f, z + 0.5f);
-                Vector3 spawnPos = new Vector3(x + 0.5f, surfaceY, z + 0.5f);
+                int protoIndex = prefabToPrototypeIndex[prefab];
 
-                GameObject newTree = Instantiate(prefab, spawnPos, Quaternion.Euler(0, Random.Range(0f, 360f), 0), treesParent);
-                newTree.name = $"{group.speciesName}_{x}_{z}";
+                // TerrainTreeInstanceを作成
+                TreeInstance instance = new TreeInstance();
+                // Terrainのローカル座標(0~1)に変換
+                instance.position = new Vector3((x + 0.5f) / worldWidthInBlocks, 0f, (z + 0.5f) / worldDepthInBlocks);
+                instance.prototypeIndex = protoIndex;
+                instance.widthScale = 1f;
+                instance.heightScale = 1f;
+                instance.color = Color.white;
+                instance.lightmapColor = Color.white;
+                instance.rotation = Random.Range(0f, Mathf.PI * 2f);
 
-                // ResourceNodeがなければ追加
-                if (newTree.GetComponent<ResourceNode>() == null)
-                {
-                    newTree.AddComponent<ResourceNode>();
-                }
+                treeInstancesList.Add(instance);
 
                 occupiedPositions.Add(new Vector2Int(x, z));
                 treeCount++;
             }
         }
 
-        Debug.Log($"[VoxelWorld] 木の自動生成完了: {treeCount}本");
+        generatedTerrainData.SetTreeInstances(treeInstancesList.ToArray(), true);
+
+        // TerrainColliderを更新（木のコライダーを有効化するため）
+        TerrainCollider tc = generatedTerrain.gameObject.GetComponent<TerrainCollider>();
+        if (tc == null) tc = generatedTerrain.gameObject.AddComponent<TerrainCollider>();
+        tc.terrainData = generatedTerrainData;
+
+        Debug.Log($"[VoxelWorld] Terrain Tree の自動生成完了: {treeCount}本");
+    }
+
+    // ==================== Terrain Tree Interaction ====================
+
+    /// <summary>
+    /// 指定されたインデックスのTerrain Treeを削除し、同じ場所に実体のGameObject（木）をスポーンして返す。
+    /// </summary>
+    public GameObject ConvertTerrainTreeToGameObject(int treeIndex)
+    {
+        if (generatedTerrainData == null || generatedTerrain == null) return null;
+        var instances = generatedTerrainData.treeInstances;
+        if (treeIndex < 0 || treeIndex >= instances.Length) return null;
+
+        TreeInstance instance = instances[treeIndex];
+        
+        // プロトタイプからプレハブを取得
+        if (instance.prototypeIndex < 0 || instance.prototypeIndex >= generatedTerrainData.treePrototypes.Length) return null;
+        GameObject prefab = generatedTerrainData.treePrototypes[instance.prototypeIndex].prefab;
+
+        // ワールド座標を計算
+        Vector3 worldPos = Vector3.Scale(instance.position, generatedTerrainData.size) + generatedTerrain.transform.position;
+        // Terrainの正確な高さを取得
+        worldPos.y = GetSurfaceWorldY(worldPos.x, worldPos.z);
+
+        // 実体化
+        GameObject go = Instantiate(prefab, worldPos, Quaternion.Euler(0, instance.rotation * Mathf.Rad2Deg, 0));
+        go.transform.parent = transform; // VoxelWorldの子に
+        go.name = prefab.name + "_Spawned";
+
+        // TerrainDataから木を削除する（再構築）
+        List<TreeInstance> newList = new List<TreeInstance>(instances);
+        newList.RemoveAt(treeIndex);
+        generatedTerrainData.treeInstances = newList.ToArray();
+
+        // Terrainのコライダーを更新（少し重いが、木1本なら許容範囲）
+        TerrainCollider tc = generatedTerrain.GetComponent<TerrainCollider>();
+        if (tc != null) tc.terrainData = generatedTerrainData;
+
+        return go;
     }
 
     // ==================== Scene Object Repositioning ====================
@@ -532,18 +621,18 @@ public class VoxelWorld : MonoBehaviour
     {
         if (generatedTerrain != null)
         {
-            Destroy(generatedTerrain.gameObject);
+            DestroyImmediate(generatedTerrain.gameObject);
             generatedTerrain = null;
         }
         if (generatedTerrainData != null)
         {
-            Destroy(generatedTerrainData);
+            DestroyImmediate(generatedTerrainData, true);
             generatedTerrainData = null;
         }
         // 古いチャンクベースの子オブジェクトも削除
         for (int i = transform.childCount - 1; i >= 0; i--)
         {
-            Destroy(transform.GetChild(i).gameObject);
+            DestroyImmediate(transform.GetChild(i).gameObject);
         }
     }
 }

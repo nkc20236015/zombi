@@ -59,12 +59,14 @@ public class ResourceNode : MonoBehaviour
         CurrentAmount = ActualYield;
         originalScale = transform.localScale;
         originalRotation = transform.localRotation;
+        
+        // タスクマーカーの初期化 (Instantiate直後に呼ばれるSetTaskMarkerに対応するためAwakeで実行)
+        InitializeTaskMarker();
     }
 
     void Start()
     {
-        // タスクマーカーの初期化
-        InitializeTaskMarker();
+        // TaskMarkerはAwakeで初期化済み
 
         // HoverHighlight を動的にアタッチ (もし付いていなければ)
         if (GetComponent<HoverHighlight>() == null)
@@ -73,36 +75,45 @@ public class ResourceNode : MonoBehaviour
         }
     }
 
-private TaskMarker taskMarker;
+    private TaskMarker taskMarker;
 
     private void InitializeTaskMarker()
     {
         taskMarker = GetComponentInChildren<TaskMarker>();
         if (taskMarker == null)
         {
-            // 動的に生成する
             GameObject markerObj = new GameObject("TaskMarker");
             markerObj.transform.SetParent(transform);
-            // 木の高さに合わせて適当に上へ
-            float height = 3f; 
-            Collider col = GetComponent<Collider>();
-            if (col != null) height = col.bounds.size.y + 1f;
-            
-            markerObj.transform.localPosition = new Vector3(0, height, 0);
-            
+
+            // NPCの身長くらいの位置にマーカーを配置（Going Medieval風）
+            // localPositionはスケールの影響を受けるので、ワールド高さ2mを逆算する
+            float worldMarkerHeight = 2.0f; // NPC身長程度
+            float scaleY = transform.lossyScale.y;
+            float localHeight = (scaleY > 0.01f) ? worldMarkerHeight / scaleY : worldMarkerHeight;
+            markerObj.transform.localPosition = new Vector3(0, localHeight, 0);
+
             var sr = markerObj.AddComponent<SpriteRenderer>();
+            sr.sortingOrder = 10;
             // アイコンの設定
 #if UNITY_EDITOR
-            Texture2D tex = UnityEditor.AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/UIアイコン/Pixel Art Icon Pack - RPG/Texture/Weapon & Tool/Axe.png");
-            if (tex != null)
+            // UIicon フォルダから斧アイコンを検索
+            string[] axeGuids = UnityEditor.AssetDatabase.FindAssets("Axe t:Texture2D", new[] { "Assets/UIicon" });
+            if (axeGuids.Length == 0)
+                axeGuids = UnityEditor.AssetDatabase.FindAssets("Axe t:Texture2D");
+            if (axeGuids.Length > 0)
             {
-                sr.sprite = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(0.5f, 0.5f), 32f);
+                string path = UnityEditor.AssetDatabase.GUIDToAssetPath(axeGuids[0]);
+                Texture2D tex = UnityEditor.AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+                if (tex != null)
+                {
+                    sr.sprite = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(0.5f, 0.5f), 32f);
+                }
             }
 #endif
-            
+
             taskMarker = markerObj.AddComponent<TaskMarker>();
         }
-        
+
         // 初期状態は非表示
         taskMarker.SetVisible(false);
     }

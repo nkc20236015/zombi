@@ -107,6 +107,10 @@ public class CameraOccluder : MonoBehaviour
         }
         // NPCController がついていたら無視
         if (obj.GetComponentInParent<NPCController>() != null) return true;
+        
+        // A案：木などの資源オブジェクト（ResourceNode）は半透明化の対象から外す
+        if (obj.GetComponentInParent<ResourceNode>() != null || obj.GetComponent<ResourceNode>() != null) return true;
+        
         return false;
     }
 

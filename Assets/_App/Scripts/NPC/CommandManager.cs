@@ -249,7 +249,7 @@ public class CommandManager : MonoBehaviour
         float minZ = Mathf.Min(dragStartWorldPos.z, dragCurrentWorldPos.z);
         float maxZ = Mathf.Max(dragStartWorldPos.z, dragCurrentWorldPos.z);
 
-        ResourceNode[] allNodes = FindObjectsOfType<ResourceNode>();
+        ResourceNode[] allNodes = FindObjectsByType<ResourceNode>(FindObjectsSortMode.None);
         int registeredCount = 0;
 
         foreach (ResourceNode node in allNodes)
@@ -263,6 +263,26 @@ public class CommandManager : MonoBehaviour
                 if (TaskManager.Instance.RegisterGatherTask(node))
                 {
                     registeredCount++;
+                }
+            }
+        }
+
+        // Terrain Trees
+        if (TerrainTreeInteractManager.Instance != null && VoxelWorld.Instance != null)
+        {
+            List<int> treeIndices = TerrainTreeInteractManager.Instance.GetTreesInRect(minX, maxX, minZ, maxZ);
+            // 配列の要素削除によるズレを防ぐため、降順にソートして処理する
+            treeIndices.Sort((a, b) => b.CompareTo(a));
+            foreach (int index in treeIndices)
+            {
+                GameObject go = VoxelWorld.Instance.ConvertTerrainTreeToGameObject(index);
+                if (go != null)
+                {
+                    ResourceNode node = go.GetComponent<ResourceNode>();
+                    if (node != null && TaskManager.Instance.RegisterGatherTask(node))
+                    {
+                        registeredCount++;
+                    }
                 }
             }
         }
@@ -289,7 +309,7 @@ public class CommandManager : MonoBehaviour
         float minZ = Mathf.Min(dragStartWorldPos.z, dragCurrentWorldPos.z);
         float maxZ = Mathf.Max(dragStartWorldPos.z, dragCurrentWorldPos.z);
 
-        ResourceNode[] allNodes = FindObjectsOfType<ResourceNode>();
+        ResourceNode[] allNodes = FindObjectsByType<ResourceNode>(FindObjectsSortMode.None);
         int cancelledCount = 0;
 
         foreach (ResourceNode node in allNodes)
@@ -321,6 +341,26 @@ public class CommandManager : MonoBehaviour
     /// </summary>
     private void HandleGatheringClick()
     {
+        // 1. Terrain Tree の判定
+        if (TerrainTreeInteractManager.Instance != null && VoxelWorld.Instance != null)
+        {
+            int treeIndex = TerrainTreeInteractManager.Instance.GetHoveredTreeIndex();
+            if (treeIndex != -1)
+            {
+                GameObject go = VoxelWorld.Instance.ConvertTerrainTreeToGameObject(treeIndex);
+                if (go != null)
+                {
+                    ResourceNode tNode = go.GetComponent<ResourceNode>();
+                    if (tNode != null && tNode.HasResources && tNode.Type == ResourceType.Wood)
+                    {
+                        TaskManager.Instance?.RegisterGatherTask(tNode);
+                        return;
+                    }
+                }
+            }
+        }
+
+        // 2. 既存の ResourceNode の判定
         Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
         if (Physics.Raycast(ray, out RaycastHit hit, 200f, resourceLayer))
         {

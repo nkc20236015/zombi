@@ -1,55 +1,66 @@
 using UnityEngine;
 
 /// <summary>
-/// マウスホバー時にオブジェクトをハイライト（アウトライン表示）するコンポーネント。
-/// モードに応じて表示を変える:
-/// - 伐採モード: 黄色の細いアウトライン
-/// - その他: 薄い白のアウトライン（控えめ）
+/// マウスホバー時にオブジェクトをハイライトするコンポーネント。
+/// アウトラインではなく、マテリアルの色を薄く変えることで控えめに選択表示する。
+/// - 通常モード: 薄い白に変化（控えめ）
+/// - 伐採モード: 薄い黄色に変化
 /// </summary>
 public class HoverHighlight : MonoBehaviour
 {
-    [Header("Harvest Mode Highlight")]
-    [SerializeField] private Color harvestHighlightColor = new Color(1f, 0.9f, 0.3f, 0.6f);
-    [SerializeField] private float harvestOutlineWidth = 0.001f;
+    [Header("Normal Mode")]
+    [SerializeField] private Color normalTintColor = new Color(1f, 1f, 1f, 1f);
+    [SerializeField] private float normalTintStrength = 0.35f;
 
-    [Header("Normal Mode Highlight")]
-    [SerializeField] private Color normalHighlightColor = new Color(1f, 1f, 1f, 0.25f);
-    [SerializeField] private float normalOutlineWidth = 0.0005f;
-    
+    [Header("Gathering Mode")]
+    [SerializeField] private Color gatheringTintColor = new Color(1f, 0.9f, 0.2f, 1f);
+    [SerializeField] private float gatheringTintStrength = 0.45f;
+
+    [Header("Cancel Mode")]
+    [SerializeField] private Color cancelTintColor = new Color(1f, 0.2f, 0.2f, 1f);
+    [SerializeField] private float cancelTintStrength = 0.45f;
+
     private Renderer[] renderers;
-    private Material[][] originalMaterials;
-    private Material outlineMaterialHarvest;
-    private Material outlineMaterialNormal;
-
+    private Color[][] originalColors;
     private bool isHovered = false;
+
+    private PlayerMode lastMode;
 
     void Start()
     {
         CacheRenderers();
     }
 
+    void Update()
+    {
+        if (isHovered && GameManager.Instance != null)
+        {
+            if (lastMode != GameManager.Instance.CurrentPlayerMode)
+            {
+                // Force update color if mode changed while hovering
+                SetHighlight(true, true);
+            }
+        }
+    }
+
     private void CacheRenderers()
     {
         renderers = GetComponentsInChildren<Renderer>();
-        originalMaterials = new Material[renderers.Length][];
-
-        Shader outlineShader = Shader.Find("Custom/Outline");
-        if (outlineShader != null)
-        {
-            // 伐採モード用 - 黄色の細いアウトライン
-            outlineMaterialHarvest = new Material(outlineShader);
-            outlineMaterialHarvest.SetColor("_OutlineColor", harvestHighlightColor);
-            outlineMaterialHarvest.SetFloat("_OutlineWidth", harvestOutlineWidth);
-
-            // 通常モード用 - 薄白の控えめなアウトライン
-            outlineMaterialNormal = new Material(outlineShader);
-            outlineMaterialNormal.SetColor("_OutlineColor", normalHighlightColor);
-            outlineMaterialNormal.SetFloat("_OutlineWidth", normalOutlineWidth);
-        }
+        originalColors = new Color[renderers.Length][];
 
         for (int i = 0; i < renderers.Length; i++)
         {
-            originalMaterials[i] = renderers[i].sharedMaterials;
+            var mats = renderers[i].materials;
+            originalColors[i] = new Color[mats.Length];
+            for (int j = 0; j < mats.Length; j++)
+            {
+                if (mats[j].HasProperty("_BaseColor"))
+                    originalColors[i][j] = mats[j].GetColor("_BaseColor");
+                else if (mats[j].HasProperty("_Color"))
+                    originalColors[i][j] = mats[j].GetColor("_Color");
+                else
+                    originalColors[i][j] = Color.white;
+            }
         }
     }
 
@@ -69,40 +80,53 @@ public class HoverHighlight : MonoBehaviour
         SetHighlight(false);
     }
 
-    private void SetHighlight(bool enable)
+    private void SetHighlight(bool enable, bool forceUpdate = false)
     {
-        if (isHovered == enable) return;
+        if (!forceUpdate && isHovered == enable) return;
         isHovered = enable;
-
         if (renderers == null) return;
 
-        // モードに応じてマテリアルを選択
-        Material outlineMat = null;
-        if (GameManager.Instance != null && GameManager.Instance.CurrentPlayerMode == PlayerMode.Gathering)
+        // モードに応じた色と強さを決定
+        PlayerMode currentMode = PlayerMode.Normal;
+        if (GameManager.Instance != null)
         {
-            outlineMat = outlineMaterialHarvest;
-        }
-        else
-        {
-            outlineMat = outlineMaterialNormal;
+            currentMode = GameManager.Instance.CurrentPlayerMode;
+            lastMode = currentMode;
         }
 
-        if (outlineMat == null) return;
+        Color tint = normalTintColor;
+        float strength = normalTintStrength;
+
+        if (currentMode == PlayerMode.Gathering)
+        {
+            tint = gatheringTintColor;
+            strength = gatheringTintStrength;
+        }
+        else if (currentMode == PlayerMode.Cancelling)
+        {
+            tint = cancelTintColor;
+            strength = cancelTintStrength;
+        }
 
         for (int i = 0; i < renderers.Length; i++)
         {
-            Material[] baseMats = originalMaterials[i];
-            
-            if (enable)
+            var mats = renderers[i].materials;
+            for (int j = 0; j < mats.Length; j++)
             {
-                Material[] newMats = new Material[baseMats.Length + 1];
-                for (int j = 0; j < baseMats.Length; j++) newMats[j] = baseMats[j];
-                newMats[baseMats.Length] = outlineMat;
-                renderers[i].materials = newMats;
-            }
-            else
-            {
-                renderers[i].materials = baseMats;
+                Color target;
+                if (enable)
+                {
+                    target = Color.Lerp(originalColors[i][j], tint, strength);
+                }
+                else
+                {
+                    target = originalColors[i][j];
+                }
+
+                if (mats[j].HasProperty("_BaseColor"))
+                    mats[j].SetColor("_BaseColor", target);
+                else if (mats[j].HasProperty("_Color"))
+                    mats[j].SetColor("_Color", target);
             }
         }
     }
