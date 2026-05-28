@@ -11,6 +11,15 @@ public class NPCController : MonoBehaviour
     [Header("Gathering Settings")]
     [SerializeField] private float gatherInterval = 2.0f; // 採取アニメーション間隔（秒）
 
+    [Header("Wander Settings")]
+    [SerializeField] private float wanderRadius = 8.0f;
+    [SerializeField] private float minWanderInterval = 10.0f;
+    [SerializeField] private float maxWanderInterval = 20.0f;
+    [SerializeField] private float wanderSpeedMultiplier = 0.4f; // うろちょろ時は歩くように遅くする
+    private float wanderTimer;
+    private float defaultMoveSpeed;
+    private Vector3 homePosition; // NPCが初期化された場所、または最後に指示された場所をホームとするか等。今回は現在地ベースでランダム
+
     public NPCState CurrentState { get; private set; } = NPCState.Idle;
     public bool IsSelected { get; private set; }
 
@@ -60,6 +69,11 @@ public class NPCController : MonoBehaviour
             GameManager.Instance.RegisterNPC(this);
             SyncMode(GameManager.Instance.CurrentPlayerMode);
         }
+
+        defaultMoveSpeed = agent.speed;
+
+        // 初期ステートの設定
+        SetState(NPCState.Idle);
     }
 
     void OnDestroy()
@@ -75,6 +89,12 @@ public class NPCController : MonoBehaviour
     {
         switch (CurrentState)
         {
+            case NPCState.Idle:
+                UpdateIdleState();
+                break;
+            case NPCState.Wandering:
+                UpdateWanderingState();
+                break;
             case NPCState.Moving:
                 UpdateMovingState();
                 break;
@@ -91,6 +111,47 @@ public class NPCController : MonoBehaviour
     }
 
     // ==================== State Updates ====================
+
+    private void UpdateIdleState()
+    {
+        if (!agent.isOnNavMesh) return;
+
+        // 暇そうにするアニメーションが再生中なら、終わるまでうろちょろタイマーを進めない
+        if (animController != null && animController.IsPlayingBoredIdle()) return;
+
+        wanderTimer -= Time.deltaTime;
+        if (wanderTimer <= 0f)
+        {
+            // 徘徊先を決定
+            Vector3 randomDirection = Random.insideUnitSphere * wanderRadius;
+            randomDirection += transform.position;
+            
+            if (NavMesh.SamplePosition(randomDirection, out NavMeshHit hit, wanderRadius, 1))
+            {
+                agent.isStopped = false;
+                agent.speed = defaultMoveSpeed * wanderSpeedMultiplier; // 歩行スピードにする
+                agent.SetDestination(hit.position);
+                SetState(NPCState.Wandering);
+            }
+            else
+            {
+                // NavMeshが見つからなかった場合は再度タイマーリセット
+                wanderTimer = Random.Range(minWanderInterval, maxWanderInterval);
+            }
+        }
+    }
+
+    private void UpdateWanderingState()
+    {
+        if (!agent.pathPending && agent.remainingDistance <= agent.stoppingDistance)
+        {
+            if (!agent.hasPath || agent.velocity.sqrMagnitude == 0f)
+            {
+                // 到着したらIdleに戻る
+                SetState(NPCState.Idle);
+            }
+        }
+    }
 
     private void UpdateMovingState()
     {
@@ -218,6 +279,7 @@ public class NPCController : MonoBehaviour
         }
 
         agent.isStopped = false;
+        agent.speed = defaultMoveSpeed; // 通常スピードに戻す
         agent.SetDestination(destination);
         SetState(NPCState.Moving);
         ShowMarker(destination);
@@ -250,6 +312,7 @@ public class NPCController : MonoBehaviour
         targetNode = node;
         Vector3 harvestPos = node.GetHarvestPosition(transform.position);
         agent.isStopped = false;
+        agent.speed = defaultMoveSpeed; // 通常スピードに戻す
         agent.SetDestination(harvestPos);
         SetState(NPCState.MovingToResource);
         ShowMarker(harvestPos);
@@ -457,6 +520,25 @@ public class NPCController : MonoBehaviour
     private void SetState(NPCState newState)
     {
         CurrentState = newState;
+
+        if (newState == NPCState.Idle)
+        {
+            // Idleに入った時に徘徊タイマーをリセット
+            wanderTimer = Random.Range(minWanderInterval, maxWanderInterval);
+
+            // たまに Bored Idle を再生する
+            if (animController != null)
+            {
+                if (Random.value < 0.3f) // 30%の確率
+                {
+                    animController.PlayBoredIdle();
+                }
+                else
+                {
+                    animController.PlayIdle();
+                }
+            }
+        }
     }
 
     private void ShowMarker(Vector3 position)

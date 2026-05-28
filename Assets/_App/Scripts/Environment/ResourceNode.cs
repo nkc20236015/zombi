@@ -85,12 +85,37 @@ public class ResourceNode : MonoBehaviour
             GameObject markerObj = new GameObject("TaskMarker");
             markerObj.transform.SetParent(transform);
 
-            // NPCの身長くらいの位置にマーカーを配置（Going Medieval風）
-            // localPositionはスケールの影響を受けるので、ワールド高さ2mを逆算する
-            float worldMarkerHeight = 2.0f; // NPC身長程度
+            // オブジェクトのメッシュの最も高い位置を計算
+            float maxLocalY = 2.0f;
+            foreach (var mf in GetComponentsInChildren<MeshFilter>())
+            {
+                if (mf.sharedMesh != null)
+                {
+                    float topY = mf.transform.localPosition.y + mf.sharedMesh.bounds.max.y * mf.transform.localScale.y;
+                    if (topY > maxLocalY) maxLocalY = topY;
+                }
+            }
+            foreach (var smr in GetComponentsInChildren<SkinnedMeshRenderer>())
+            {
+                if (smr.sharedMesh != null)
+                {
+                    float topY = smr.transform.localPosition.y + smr.sharedMesh.bounds.max.y * smr.transform.localScale.y;
+                    if (topY > maxLocalY) maxLocalY = topY;
+                }
+            }
+
+            // 最上部から少し浮かせた位置に配置（0.5m上。スケール影響を考慮）
             float scaleY = transform.lossyScale.y;
-            float localHeight = (scaleY > 0.01f) ? worldMarkerHeight / scaleY : worldMarkerHeight;
-            markerObj.transform.localPosition = new Vector3(0, localHeight, 0);
+            float localOffset = (scaleY > 0.01f) ? (0.5f / scaleY) : 0.5f;
+            
+            markerObj.transform.localPosition = new Vector3(0, maxLocalY + localOffset, 0);
+
+            // スケールを均一に保つ（木が巨大・矮小でもアイコンの大きさは一定にする）
+            markerObj.transform.localScale = new Vector3(
+                1.0f / transform.lossyScale.x,
+                1.0f / transform.lossyScale.y,
+                1.0f / transform.lossyScale.z
+            ) * 1.5f; // 見やすいように少し大きめに設定
 
             var sr = markerObj.AddComponent<SpriteRenderer>();
             sr.sortingOrder = 10;

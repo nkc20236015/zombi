@@ -29,9 +29,11 @@ public class NPCAnimationController : MonoBehaviour
         // Calculate velocity magnitude based on NavMeshAgent
         float speed = agent.velocity.magnitude;
         bool isMoving = speed > 0.1f && !agent.isStopped;
+        
+        bool isWandering = npcController.CurrentState == NPCState.Wandering;
 
-        // Update animator parameters
-        animator.SetBool(isMovingHash, isMoving);
+        // もし徘徊中なら、通常のMoveへの遷移を防ぐため IsMoving を false にする
+        animator.SetBool(isMovingHash, isWandering ? false : isMoving);
         animator.SetFloat(velocityHash, speed);
 
         // 移動開始したらアクションを中断
@@ -39,6 +41,35 @@ public class NPCAnimationController : MonoBehaviour
         {
             StopAction();
         }
+
+        var state = animator.GetCurrentAnimatorStateInfo(0);
+
+        // 徘徊中の移動アニメーション（Carry-WalkForward）を強制再生
+        if (isWandering && isMoving)
+        {
+            if (!state.IsName("WanderMove") && !animator.IsInTransition(0))
+            {
+                animator.CrossFade("WanderMove", 0.25f);
+            }
+        }
+        else if (!isMoving && state.IsName("WanderMove") && !animator.IsInTransition(0))
+        {
+            animator.CrossFade("Idle", 0.25f);
+        }
+        
+        // Idle-Bored1が終わったら自動的にIdleに戻る
+        if (!isMoving && state.IsName("Idle-Bored1") && state.normalizedTime >= 0.95f && !animator.IsInTransition(0))
+        {
+            animator.CrossFade("Idle", 0.25f);
+        }
+    }
+
+    public bool IsPlayingBoredIdle()
+    {
+        var state = animator.GetCurrentAnimatorStateInfo(0);
+        var nextState = animator.GetNextAnimatorStateInfo(0);
+        if (animator.IsInTransition(0) && nextState.IsName("Idle-Bored1")) return true;
+        return state.IsName("Idle-Bored1") && state.normalizedTime < 0.95f;
     }
 
     /// <summary>
@@ -62,6 +93,28 @@ public class NPCAnimationController : MonoBehaviour
         animator.ResetTrigger(actionTriggerHash);
         animator.SetInteger(actionTypeHash, -1);
         // Animator Controllerの遷移条件に依存せず、確実にIdleへ戻す
+        animator.CrossFade("Idle", 0.25f);
+    }
+
+    /// <summary>
+    /// たまに再生する特殊なIdleアニメーション
+    /// </summary>
+    public void PlayBoredIdle()
+    {
+        isPerformingAction = false;
+        animator.ResetTrigger(actionTriggerHash);
+        animator.SetInteger(actionTypeHash, -1);
+        animator.CrossFade("Idle-Bored1", 0.25f);
+    }
+
+    /// <summary>
+    /// 通常のIdleアニメーションを明示的に再生
+    /// </summary>
+    public void PlayIdle()
+    {
+        isPerformingAction = false;
+        animator.ResetTrigger(actionTriggerHash);
+        animator.SetInteger(actionTypeHash, -1);
         animator.CrossFade("Idle", 0.25f);
     }
 
