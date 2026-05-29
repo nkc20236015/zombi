@@ -105,7 +105,7 @@ public class TopDownCamera : MonoBehaviour
                 Vector3 fwd = Vector3.ProjectOnPlane(transform.forward, Vector3.up).normalized;
                 Vector3 rt = Vector3.ProjectOnPlane(transform.right, Vector3.up).normalized;
                 if (fwd.sqrMagnitude < 0.001f) fwd = Vector3.forward;
-                targetPos += (fwd * v + rt * h).normalized * spd * hf * Time.deltaTime;
+                targetPos += (fwd * v + rt * h).normalized * spd * hf * Time.unscaledDeltaTime;
             }
         }
 
@@ -130,7 +130,11 @@ public class TopDownCamera : MonoBehaviour
         targetPos.y = Mathf.Clamp(targetPos.y, dynamicMinHeight, maxHeight);
         targetPos.x = Mathf.Clamp(targetPos.x, boundsX.x, boundsX.y);
         targetPos.z = Mathf.Clamp(targetPos.z, boundsZ.x, boundsZ.y);
-        transform.position = Vector3.SmoothDamp(transform.position, targetPos, ref vel, moveSmoothTime);
+        
+        // Time.timeScaleに影響されないように Time.unscaledDeltaTime を使用する
+        transform.position = Vector3.SmoothDamp(
+            transform.position, targetPos, ref vel, moveSmoothTime, Mathf.Infinity, Time.unscaledDeltaTime
+        );
     }
 
     // ==================== Public API ====================
