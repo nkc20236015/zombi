@@ -16,6 +16,10 @@ public class CommandManager : MonoBehaviour
     [SerializeField] private LayerMask groundLayer;
     [SerializeField] private LayerMask resourceLayer; // ResourceNode用のレイヤー
 
+    [Header("Zoning")]
+    [SerializeField] private Color zoningPreviewColor = new Color(0.3f, 0.7f, 1f, 0.25f);
+    [SerializeField] private Color zoningBorderColor = new Color(0.3f, 0.7f, 1f, 1f);
+
     [Header("Drag Selection")]
     [SerializeField] private float dragThreshold = 0.5f; // ワールド座標でのドラッグ判定距離
 
@@ -34,6 +38,15 @@ public class CommandManager : MonoBehaviour
 
     private Material gatherMaterial;
     private Material cancelMaterial;
+    private Material zoningMaterial;
+
+    // Zoning用のドラッグ
+    private Vector2Int zoningGridStart;
+    private Vector2Int zoningGridCurrent;
+    private bool isZoningDrag = false;
+    private GameObject zoningPreviewObject;
+    private MeshRenderer zoningPreviewRenderer;
+    private LineRenderer zoningBorderRenderer;
 
     void Awake()
     {
@@ -59,6 +72,9 @@ public class CommandManager : MonoBehaviour
         cancelMaterial = new Material(shader);
         cancelMaterial.color = new Color(1f, 0.2f, 0.2f, 0.3f); // 半透明の赤
 
+        zoningMaterial = new Material(shader);
+        zoningMaterial.color = zoningPreviewColor;
+
         // 塗りつぶし用（地面に張り付く板）
         selectionAreaObject = GameObject.CreatePrimitive(PrimitiveType.Cube);
         selectionAreaObject.name = "SelectionAreaProjector";
@@ -83,6 +99,30 @@ public class CommandManager : MonoBehaviour
         borderRenderer.receiveShadows = false;
 
         selectionAreaObject.SetActive(false);
+
+        // Zoning用のプレビューオブジェクト
+        zoningPreviewObject = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        zoningPreviewObject.name = "ZoningPreview";
+        Destroy(zoningPreviewObject.GetComponent<Collider>());
+
+        zoningPreviewRenderer = zoningPreviewObject.GetComponent<MeshRenderer>();
+        zoningPreviewRenderer.material = zoningMaterial;
+        zoningPreviewRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        zoningPreviewRenderer.receiveShadows = false;
+
+        zoningBorderRenderer = zoningPreviewObject.AddComponent<LineRenderer>();
+        zoningBorderRenderer.useWorldSpace = true;
+        zoningBorderRenderer.loop = true;
+        zoningBorderRenderer.positionCount = 4;
+        zoningBorderRenderer.startWidth = 0.06f;
+        zoningBorderRenderer.endWidth = 0.06f;
+        zoningBorderRenderer.material = new Material(shader);
+        zoningBorderRenderer.startColor = zoningBorderColor;
+        zoningBorderRenderer.endColor = zoningBorderColor;
+        zoningBorderRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        zoningBorderRenderer.receiveShadows = false;
+
+        zoningPreviewObject.SetActive(false);
     }
 
     void Update()
@@ -94,16 +134,24 @@ public class CommandManager : MonoBehaviour
         // 建築モード中は何もしない
         if (mode == PlayerMode.Building) return;
 
-        // 右クリック: Gathering/Cancelling モードを解除して Normal に戻す
+        // 右クリック: Gathering/Cancelling/StockpileZoning モードを解除して Normal に戻す
         if (Input.GetMouseButtonDown(1))
         {
-            if (mode == PlayerMode.Gathering || mode == PlayerMode.Cancelling)
+            if (mode == PlayerMode.Gathering || mode == PlayerMode.Cancelling || mode == PlayerMode.StockpileZoning)
             {
                 CancelDrag();
+                CancelZoningDrag();
                 GameManager.Instance.SetPlayerMode(PlayerMode.Normal);
                 Debug.Log("[CommandManager] モード解除 → Normal");
                 return;
             }
+        }
+
+        // StockpileZoning モードではグリッドスナップ選択を処理
+        if (mode == PlayerMode.StockpileZoning)
+        {
+            HandleZoningInput();
+            return;
         }
 
         // Gathering または Cancelling モードではドラッグ範囲選択を処理
@@ -232,6 +280,127 @@ public class CommandManager : MonoBehaviour
         if (selectionAreaObject != null)
         {
             selectionAreaObject.SetActive(false);
+        }
+    }
+
+    // ==================== Stockpile Zoning Input ====================
+
+    /// <summary>
+    /// 備蓄場作成モードのドラッグ入力処理。マス目にスナップする。
+    /// </summary>
+    private void HandleZoningInput()
+    {
+        if (UnityEngine.EventSystems.EventSystem.current != null &&
+            UnityEngine.EventSystems.EventSystem.current.IsPointerOverGameObject())
+        {
+            if (!isZoningDrag) return;
+        }
+
+        if (GridManager.Instance == null) return;
+
+        // マウスダウン: グリッド開始位置を記録
+        if (Input.GetMouseButtonDown(0))
+        {
+            if (GridManager.Instance.TryGetGridPositionFromMouse(out Vector2Int gridPos))
+            {
+                isZoningDrag = true;
+                zoningGridStart = gridPos;
+                zoningGridCurrent = gridPos;
+                zoningPreviewObject.SetActive(true);
+                UpdateZoningPreview();
+            }
+        }
+
+        // マウスドラッグ中: グリッド現在位置を更新
+        if (isZoningDrag && Input.GetMouseButton(0))
+        {
+            if (GridManager.Instance.TryGetGridPositionFromMouse(out Vector2Int gridPos))
+            {
+                zoningGridCurrent = gridPos;
+                UpdateZoningPreview();
+            }
+        }
+
+        // マウスアップ: 備蓄場を作成
+        if (isZoningDrag && Input.GetMouseButtonUp(0))
+        {
+            CreateStockpileFromDrag();
+            CancelZoningDrag();
+        }
+    }
+
+    /// <summary>
+    /// ドラッグ中の備蓄場プレビューを更新（マス目にスナップ）
+    /// </summary>
+    private void UpdateZoningPreview()
+    {
+        if (GridManager.Instance == null) return;
+
+        int minX = Mathf.Min(zoningGridStart.x, zoningGridCurrent.x);
+        int maxX = Mathf.Max(zoningGridStart.x, zoningGridCurrent.x);
+        int minZ = Mathf.Min(zoningGridStart.y, zoningGridCurrent.y);
+        int maxZ = Mathf.Max(zoningGridStart.y, zoningGridCurrent.y);
+
+        float cellSizeX = GridManager.Instance.CellSizeX;
+        float cellSizeZ = GridManager.Instance.CellSizeZ;
+        Vector3 origin = GridManager.Instance.GridOrigin;
+
+        // ワールド座標に変換（グリッドの辺にスナップ）
+        float worldMinX = minX * cellSizeX + origin.x;
+        float worldMaxX = (maxX + 1) * cellSizeX + origin.x;
+        float worldMinZ = minZ * cellSizeZ + origin.z;
+        float worldMaxZ = (maxZ + 1) * cellSizeZ + origin.z;
+
+        float sizeX = worldMaxX - worldMinX;
+        float sizeZ = worldMaxZ - worldMinZ;
+        float centerX = worldMinX + sizeX / 2f;
+        float centerZ = worldMinZ + sizeZ / 2f;
+
+        float yPos = 0.06f;
+        if (VoxelWorld.Instance != null)
+        {
+            yPos = VoxelWorld.Instance.GetSurfaceWorldY(centerX, centerZ) + 0.06f;
+        }
+
+        zoningPreviewObject.transform.position = new Vector3(centerX, yPos, centerZ);
+        zoningPreviewObject.transform.localScale = new Vector3(sizeX, 0.01f, sizeZ);
+
+        // 枠線（ロープのプレビュー）
+        float lineY = yPos + 0.02f;
+        zoningBorderRenderer.SetPosition(0, new Vector3(worldMinX, lineY, worldMinZ));
+        zoningBorderRenderer.SetPosition(1, new Vector3(worldMinX, lineY, worldMaxZ));
+        zoningBorderRenderer.SetPosition(2, new Vector3(worldMaxX, lineY, worldMaxZ));
+        zoningBorderRenderer.SetPosition(3, new Vector3(worldMaxX, lineY, worldMinZ));
+    }
+
+    /// <summary>
+    /// ドラッグ範囲から備蓄場を作成する
+    /// </summary>
+    private void CreateStockpileFromDrag()
+    {
+        if (StockpileManager.Instance == null) return;
+
+        int minX = Mathf.Min(zoningGridStart.x, zoningGridCurrent.x);
+        int maxX = Mathf.Max(zoningGridStart.x, zoningGridCurrent.x);
+        int minZ = Mathf.Min(zoningGridStart.y, zoningGridCurrent.y);
+        int maxZ = Mathf.Max(zoningGridStart.y, zoningGridCurrent.y);
+
+        Vector2Int gridMin = new Vector2Int(minX, minZ);
+        Vector2Int gridMax = new Vector2Int(maxX, maxZ);
+
+        StockpileZone zone = StockpileManager.Instance.CreateZone(gridMin, gridMax);
+        if (zone != null)
+        {
+            Debug.Log($"[CommandManager] 備蓄場を作成しました: {zone.CellCount}マス");
+        }
+    }
+
+    private void CancelZoningDrag()
+    {
+        isZoningDrag = false;
+        if (zoningPreviewObject != null)
+        {
+            zoningPreviewObject.SetActive(false);
         }
     }
 

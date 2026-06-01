@@ -37,5 +37,8 @@ public enum PlayerMode
     Gathering,
     
     /// <summary>タスクキャンセルモード（CancelPanel押下後）</summary>
-    Cancelling
+    Cancelling,
+    
+    /// <summary>備蓄場作成モード（エリアボタン押下後）</summary>
+    StockpileZoning
 }

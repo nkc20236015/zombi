@@ -11,6 +11,10 @@ public class NPCController : MonoBehaviour
     [Header("Gathering Settings")]
     [SerializeField] private float gatherInterval = 2.0f; // 採取アニメーション間隔（秒）
 
+    [Header("Hauling Settings")]
+    [SerializeField] private int maxCarryAmount = 50; // 1回に運べる最大量
+    [SerializeField] private float haulingCheckInterval = 3.0f; // 運搬可否チェック間隔
+
     [Header("Wander Settings")]
     [SerializeField] private float wanderRadius = 8.0f;
     [SerializeField] private float minWanderInterval = 10.0f;
@@ -43,6 +47,14 @@ public class NPCController : MonoBehaviour
     private Vector3? pendingMoveDestination;     // 収納後に移動する先
     private ResourceNode pendingGatherNode;      // 収納後に採取する先
     private float putAwayTimer;
+
+    // 運搬関連
+    private DroppedResource haulTarget;           // 拾いに行くアイテム
+    private StockpileZone carryTargetZone;        // 運ぶ先の備蓄場
+    private Vector2Int carryTargetCell;            // 運ぶ先のマス
+    private ResourceType carryingResourceType;    // 運んでいる資源の種類
+    private int carryingAmount;                   // 運んでいる量
+    private float haulingCheckTimer;              // 運搬チェックタイマー
 
     void Awake()
     {
@@ -107,6 +119,12 @@ public class NPCController : MonoBehaviour
             case NPCState.PuttingAway:
                 UpdatePuttingAwayState();
                 break;
+            case NPCState.Hauling:
+                UpdateHaulingState();
+                break;
+            case NPCState.Carrying:
+                UpdateCarryingState();
+                break;
         }
     }
 
@@ -118,6 +136,14 @@ public class NPCController : MonoBehaviour
 
         // 暇そうにするアニメーションが再生中なら、終わるまでうろちょろタイマーを進めない
         if (animController != null && animController.IsPlayingBoredIdle()) return;
+
+        // 運搬チェック（Idle中に一定間隔で落ちているアイテムを探す）
+        haulingCheckTimer -= Time.deltaTime;
+        if (haulingCheckTimer <= 0f)
+        {
+            haulingCheckTimer = haulingCheckInterval;
+            if (TryStartHauling()) return; // 運搬開始できたらIdleから抜ける
+        }
 
         wanderTimer -= Time.deltaTime;
         if (wanderTimer <= 0f)
@@ -508,11 +534,197 @@ public class NPCController : MonoBehaviour
         }
         else
         {
-            // バッファなし → Idle
+            // バッファなし → 運搬があるかチェックしてからIdleへ
             pendingMoveDestination = null;
             pendingGatherNode = null;
             HideMarker();
+            
+            // ツール収納後、すぐに運搬を試みる
+            if (!TryStartHauling())
+            {
+                // 運搬がなければ通常Idle
+            }
         }
+    }
+
+    // ==================== Hauling (item pickup) ====================
+
+    /// <summary>
+    /// 落ちているアイテムと備蓄場がある場合、運搬を開始する。成功したらtrue。
+    /// </summary>
+    private bool TryStartHauling()
+    {
+        if (ItemDropManager.Instance == null || StockpileManager.Instance == null) return false;
+        if (!ItemDropManager.Instance.HasAnyDroppedItems()) return false;
+        if (!StockpileManager.Instance.HasAnyAvailableSpace()) return false;
+
+        // 最寄りの落ちアイテムを探す
+        DroppedResource nearest = ItemDropManager.Instance.FindNearestDroppedResource(transform.position);
+        if (nearest == null) return false;
+
+        // 備蓄場に空きがあるか確認
+        if (!StockpileManager.Instance.TryGetNearestAvailableCell(transform.position, out StockpileZone zone, out Vector2Int cell))
+            return false;
+
+        // 運搬開始
+        haulTarget = nearest;
+        carryTargetZone = zone;
+        carryTargetCell = cell;
+
+        agent.isStopped = false;
+        agent.speed = defaultMoveSpeed; // 通常スピードで拾いに行く
+        agent.SetDestination(nearest.transform.position);
+        SetState(NPCState.Hauling);
+
+        Debug.Log($"[NPCController] {gameObject.name}: 運搬開始 → アイテムを拾いに行く");
+        return true;
+    }
+
+    /// <summary>
+    /// Haulingステート: アイテムの場所へ向かっている
+    /// </summary>
+    private void UpdateHaulingState()
+    {
+        // アイテムが消えてしまった（他のNPCが先に拾った等）
+        if (haulTarget == null)
+        {
+            StopHauling();
+            return;
+        }
+
+        // 到着チェック
+        if (!agent.pathPending && agent.remainingDistance <= agent.stoppingDistance + 0.5f)
+        {
+            if (!agent.hasPath || agent.velocity.sqrMagnitude == 0f)
+            {
+                PickUpItem();
+            }
+        }
+    }
+
+    /// <summary>
+    /// アイテムを拾う。拾ったらCarryingステートへ移行。
+    /// </summary>
+    private void PickUpItem()
+    {
+        if (haulTarget == null || ItemDropManager.Instance == null)
+        {
+            StopHauling();
+            return;
+        }
+
+        // アイテムを回収
+        carryingResourceType = haulTarget.Type;
+        carryingAmount = ItemDropManager.Instance.PickUpResource(haulTarget, maxCarryAmount);
+        haulTarget = null;
+
+        if (carryingAmount <= 0)
+        {
+            StopHauling();
+            return;
+        }
+
+        Debug.Log($"[NPCController] {gameObject.name}: {carryingResourceType} x{carryingAmount} を拾った！備蓄場へ運ぶ");
+
+        // 備蓄場へ向かう
+        if (StockpileManager.Instance != null &&
+            StockpileManager.Instance.TryGetNearestAvailableCell(transform.position, out StockpileZone zone, out Vector2Int cell))
+        {
+            carryTargetZone = zone;
+            carryTargetCell = cell;
+
+            Vector3 targetWorldPos = GridManager.Instance.GridToWorld(carryTargetCell);
+            agent.isStopped = false;
+            agent.speed = defaultMoveSpeed * wanderSpeedMultiplier; // 運搬中はゆっくり歩く
+            agent.SetDestination(targetWorldPos);
+            SetState(NPCState.Carrying);
+        }
+        else
+        {
+            // 備蓄場がない！その場にドロップし直す
+            DropCarriedItems();
+            StopHauling();
+        }
+    }
+
+    /// <summary>
+    /// Carryingステート: アイテムを抱えて備蓄場へ向かっている
+    /// </summary>
+    private void UpdateCarryingState()
+    {
+        // 到着チェック
+        if (!agent.pathPending && agent.remainingDistance <= agent.stoppingDistance + 0.5f)
+        {
+            if (!agent.hasPath || agent.velocity.sqrMagnitude == 0f)
+            {
+                DeliverItem();
+            }
+        }
+    }
+
+    /// <summary>
+    /// 備蓄場にアイテムを置く。
+    /// </summary>
+    private void DeliverItem()
+    {
+        if (carryingAmount <= 0)
+        {
+            StopHauling();
+            return;
+        }
+
+        // 備蓄場にアイテムをドロップ
+        if (ItemDropManager.Instance != null && GridManager.Instance != null)
+        {
+            if (carryingResourceType == ResourceType.Wood)
+            {
+                ItemDropManager.Instance.DropWood(carryTargetCell, carryingAmount);
+            }
+            // 備蓄場の保管量を更新
+            if (carryTargetZone != null)
+            {
+                carryTargetZone.StoreItem(carryTargetCell, carryingAmount);
+            }
+        }
+
+        Debug.Log($"[NPCController] {gameObject.name}: {carryingResourceType} x{carryingAmount} を備蓄場に納品！");
+
+        // リソースマネージャーに加算
+        if (ResourceManager.Instance != null)
+        {
+            ResourceManager.Instance.AddResource(carryingResourceType, carryingAmount);
+        }
+
+        carryingAmount = 0;
+        StopHauling();
+    }
+
+    /// <summary>
+    /// 運搬を中断/完了してIdleに戻る
+    /// </summary>
+    private void StopHauling()
+    {
+        haulTarget = null;
+        carryTargetZone = null;
+        carryingAmount = 0;
+        agent.speed = defaultMoveSpeed;
+        SetState(NPCState.Idle);
+    }
+
+    /// <summary>
+    /// 運搬中のアイテムをその場にドロップする（運搬中断時）
+    /// </summary>
+    private void DropCarriedItems()
+    {
+        if (carryingAmount <= 0) return;
+        if (ItemDropManager.Instance == null || GridManager.Instance == null) return;
+
+        Vector2Int dropPos = GridManager.Instance.WorldToGrid(transform.position);
+        if (carryingResourceType == ResourceType.Wood)
+        {
+            ItemDropManager.Instance.DropWood(dropPos, carryingAmount);
+        }
+        carryingAmount = 0;
     }
 
     // ==================== State & Marker Helpers ====================

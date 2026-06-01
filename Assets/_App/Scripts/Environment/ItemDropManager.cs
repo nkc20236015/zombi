@@ -122,4 +122,61 @@ public class ItemDropManager : MonoBehaviour
             }
         }
     }
+
+    /// <summary>
+    /// NPC用: 最も近い落ちているリソースを探す。
+    /// </summary>
+    public DroppedResource FindNearestDroppedResource(Vector3 npcPosition)
+    {
+        DroppedResource nearest = null;
+        float nearestDist = float.MaxValue;
+
+        foreach (var kvp in gridItems)
+        {
+            if (kvp.Value == null) continue;
+            float dist = Vector3.Distance(npcPosition, kvp.Value.transform.position);
+            if (dist < nearestDist)
+            {
+                nearestDist = dist;
+                nearest = kvp.Value;
+            }
+        }
+
+        return nearest;
+    }
+
+    /// <summary>
+    /// NPC用: 指定のDroppedResourceからアイテムを回収（最大carryAmount分）。
+    /// アイテムがすべて回収された場合はGridから削除し、GameObjectを破棄。
+    /// 回収量を返す。
+    /// </summary>
+    public int PickUpResource(DroppedResource resource, int carryAmount)
+    {
+        if (resource == null) return 0;
+
+        int available = resource.Amount;
+        int taken = Mathf.Min(available, carryAmount);
+
+        if (taken >= available)
+        {
+            // 全て回収 → 削除
+            gridItems.Remove(resource.GridPosition);
+            Destroy(resource.gameObject);
+        }
+        else
+        {
+            // 一部回収 → 残量を減らす（AddAmountで負数は処理できないためReInitialize）
+            resource.Initialize(resource.Type, available - taken, resource.GridPosition);
+        }
+
+        return taken;
+    }
+
+    /// <summary>
+    /// 落ちているアイテムが1つでも存在するか
+    /// </summary>
+    public bool HasAnyDroppedItems()
+    {
+        return gridItems.Count > 0;
+    }
 }

@@ -21,6 +21,7 @@ public class HUDManager : MonoBehaviour
     [Header("Task Panel Buttons")]
     [SerializeField] private Button axeButton;      // AxeImage に付いている Button
     [SerializeField] private Button cancelButton;   // CancelImage に付いている Button
+    [SerializeField] private Button stockpileButton; // エリア作成ボタン
 
     // ハイライト用の色
     private Color normalButtonColor = Color.white;
@@ -57,6 +58,10 @@ public class HUDManager : MonoBehaviour
         {
             cancelButton.onClick.AddListener(OnCancelButtonClicked);
         }
+        if (stockpileButton != null)
+        {
+            stockpileButton.onClick.AddListener(OnStockpileButtonClicked);
+        }
     }
 
     private void OnDestroy()
@@ -75,6 +80,7 @@ public class HUDManager : MonoBehaviour
 
         if (axeButton != null) axeButton.onClick.RemoveListener(OnAxeButtonClicked);
         if (cancelButton != null) cancelButton.onClick.RemoveListener(OnCancelButtonClicked);
+        if (stockpileButton != null) stockpileButton.onClick.RemoveListener(OnStockpileButtonClicked);
     }
 
     // ==================== Phase / Day UI ====================
@@ -206,6 +212,21 @@ public class HUDManager : MonoBehaviour
         }
     }
 
+    private void OnStockpileButtonClicked()
+    {
+        if (GameManager.Instance == null) return;
+
+        // 既にStockpileZoningモードならNormalに戻す（トグル）
+        if (GameManager.Instance.CurrentPlayerMode == PlayerMode.StockpileZoning)
+        {
+            GameManager.Instance.SetPlayerMode(PlayerMode.Normal);
+        }
+        else
+        {
+            GameManager.Instance.SetPlayerMode(PlayerMode.StockpileZoning);
+        }
+    }
+
     /// <summary>
     /// PlayerModeが変化したときにボタンのハイライトを更新
     /// </summary>
@@ -228,6 +249,16 @@ public class HUDManager : MonoBehaviour
             if (cancelImage != null)
             {
                 cancelImage.color = (mode == PlayerMode.Cancelling) ? activeButtonColor : normalButtonColor;
+            }
+        }
+
+        // StockpileButton のハイライト
+        if (stockpileButton != null)
+        {
+            Image stockpileImage = stockpileButton.GetComponent<Image>();
+            if (stockpileImage != null)
+            {
+                stockpileImage.color = (mode == PlayerMode.StockpileZoning) ? activeButtonColor : normalButtonColor;
             }
         }
     }

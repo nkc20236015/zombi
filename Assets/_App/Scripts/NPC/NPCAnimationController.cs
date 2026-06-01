@@ -31,9 +31,10 @@ public class NPCAnimationController : MonoBehaviour
         bool isMoving = speed > 0.1f && !agent.isStopped;
         
         bool isWandering = npcController.CurrentState == NPCState.Wandering;
+        bool isCarrying = npcController.CurrentState == NPCState.Carrying;
 
-        // もし徘徊中なら、通常のMoveへの遷移を防ぐため IsMoving を false にする
-        animator.SetBool(isMovingHash, isWandering ? false : isMoving);
+        // もし徘徊中または運搬中なら、通常のMoveへの遷移を防ぐため IsMoving を false にする
+        animator.SetBool(isMovingHash, (isWandering || isCarrying) ? false : isMoving);
         animator.SetFloat(velocityHash, speed);
 
         // 移動開始したらアクションを中断
@@ -44,8 +45,8 @@ public class NPCAnimationController : MonoBehaviour
 
         var state = animator.GetCurrentAnimatorStateInfo(0);
 
-        // 徘徊中の移動アニメーション（Carry-WalkForward）を強制再生
-        if (isWandering && isMoving)
+        // 徘徊中または運搬中の移動アニメーション（Carry-WalkForward）を強制再生
+        if ((isWandering || isCarrying) && isMoving)
         {
             if (!state.IsName("WanderMove") && !animator.IsInTransition(0))
             {
