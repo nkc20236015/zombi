@@ -18,29 +18,13 @@ public class StockpileZone : MonoBehaviour
     public int MaxPerCell => 200;
 
     // ロープ描画用
-    private LineRenderer ropeRenderer;
+    private List<LineRenderer> cellRenderers = new List<LineRenderer>();
     private static readonly Color ropeColor = new Color(0.55f, 0.35f, 0.15f, 1f); // 茶色（ロープ風）
     private static readonly float ropeWidth = 0.08f;
 
     void Awake()
     {
-        // ロープ表現用のLineRendererを設定
-        ropeRenderer = gameObject.AddComponent<LineRenderer>();
-        ropeRenderer.useWorldSpace = true;
-        ropeRenderer.loop = true;
-        ropeRenderer.startWidth = ropeWidth;
-        ropeRenderer.endWidth = ropeWidth;
-        ropeRenderer.numCapVertices = 4;
-        ropeRenderer.numCornerVertices = 4;
-        ropeRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-        ropeRenderer.receiveShadows = false;
-
-        // マテリアル設定（テクスチャ未割当の場合はプレーン茶色）
-        Material ropeMat = new Material(Shader.Find("Sprites/Default"));
-        ropeMat.color = ropeColor;
-        ropeRenderer.material = ropeMat;
-        ropeRenderer.startColor = ropeColor;
-        ropeRenderer.endColor = ropeColor;
+        // 以前の共有LineRendererのセットアップは削除。各セルごとに生成する。
     }
 
     /// <summary>
@@ -60,6 +44,12 @@ public class StockpileZone : MonoBehaviour
                 {
                     cells.Add(pos);
                     storedAmounts[pos] = 0;
+
+                    // 雑草（草テクスチャ）を消して土にする
+                    if (VoxelWorld.Instance != null)
+                    {
+                        VoxelWorld.Instance.ClearGrassAtGrid(pos);
+                    }
                 }
             }
         }
@@ -118,6 +108,14 @@ public class StockpileZone : MonoBehaviour
     }
 
     /// <summary>
+    /// 指定のグリッド座標がこのゾーン内に含まれているか
+    /// </summary>
+    public bool ContainsCell(Vector2Int gridPos)
+    {
+        return cells.Contains(gridPos);
+    }
+
+    /// <summary>
     /// セルの個数
     /// </summary>
     public int CellCount => cells.Count;
@@ -125,151 +123,70 @@ public class StockpileZone : MonoBehaviour
     // ==================== ロープ境界線の描画 ====================
 
     /// <summary>
-    /// セルの外周（ペリメーター）を計算し、LineRendererでロープを描画する。
-    /// マス目の境界線に沿って四角形の辺を繋ぐ。
+    /// 各セルごとに独立した四角形のロープを描画する。
+    /// 一マスで作った時と同じ見た目を維持するため、外周の結合は行わない。
     /// </summary>
     private void RebuildRopeBorder()
     {
-        if (ropeRenderer == null || GridManager.Instance == null || cells.Count == 0) return;
+        if (GridManager.Instance == null) return;
 
-        // 外周のエッジを収集する
-        // 各セルの4辺のうち、隣にセルがない辺だけが外周
-        HashSet<(Vector2Int, Vector2Int)> edges = new HashSet<(Vector2Int, Vector2Int)>();
+        // 既存のレンダラーをクリア
+        foreach (var lr in cellRenderers)
+        {
+            if (lr != null) Destroy(lr.gameObject);
+        }
+        cellRenderers.Clear();
 
+        Material ropeMat = new Material(Shader.Find("Sprites/Default"));
+        ropeMat.color = ropeColor;
+
+        float cellSizeX = GridManager.Instance.CellSizeX;
+        float cellSizeZ = GridManager.Instance.CellSizeZ;
+        Vector3 origin = GridManager.Instance.GridOrigin;
+
+        // 各セルごとにLineRendererを生成
         foreach (var cell in cells)
         {
-            float cellSizeX = GridManager.Instance.CellSizeX;
-            float cellSizeZ = GridManager.Instance.CellSizeZ;
-            Vector3 origin = GridManager.Instance.GridOrigin;
+            GameObject cellObj = new GameObject($"CellRope_{cell.x}_{cell.y}");
+            cellObj.transform.parent = transform;
+
+            LineRenderer lr = cellObj.AddComponent<LineRenderer>();
+            lr.useWorldSpace = true;
+            lr.loop = true;
+            lr.startWidth = ropeWidth;
+            lr.endWidth = ropeWidth;
+            lr.numCapVertices = 4;
+            lr.numCornerVertices = 4;
+            lr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            lr.receiveShadows = false;
+            lr.material = ropeMat;
+            lr.startColor = ropeColor;
+            lr.endColor = ropeColor;
 
             float left = cell.x * cellSizeX + origin.x;
             float right = (cell.x + 1) * cellSizeX + origin.x;
             float bottom = cell.y * cellSizeZ + origin.z;
             float top = (cell.y + 1) * cellSizeZ + origin.z;
 
-            // 上辺 (cell.y+1方向に隣がなければ外周)
-            if (!cells.Contains(new Vector2Int(cell.x, cell.y + 1)))
+            // 各角のY座標を取得
+            float GetY(float x, float z)
             {
-                AddEdge(edges, 
-                    new Vector2Int(Mathf.RoundToInt(left * 1000), Mathf.RoundToInt(top * 1000)),
-                    new Vector2Int(Mathf.RoundToInt(right * 1000), Mathf.RoundToInt(top * 1000)));
+                if (VoxelWorld.Instance != null)
+                    return VoxelWorld.Instance.GetSurfaceWorldY(x, z) + 0.15f;
+                return 0.15f;
             }
-            // 下辺
-            if (!cells.Contains(new Vector2Int(cell.x, cell.y - 1)))
-            {
-                AddEdge(edges,
-                    new Vector2Int(Mathf.RoundToInt(right * 1000), Mathf.RoundToInt(bottom * 1000)),
-                    new Vector2Int(Mathf.RoundToInt(left * 1000), Mathf.RoundToInt(bottom * 1000)));
-            }
-            // 右辺
-            if (!cells.Contains(new Vector2Int(cell.x + 1, cell.y)))
-            {
-                AddEdge(edges,
-                    new Vector2Int(Mathf.RoundToInt(right * 1000), Mathf.RoundToInt(top * 1000)),
-                    new Vector2Int(Mathf.RoundToInt(right * 1000), Mathf.RoundToInt(bottom * 1000)));
-            }
-            // 左辺
-            if (!cells.Contains(new Vector2Int(cell.x - 1, cell.y)))
-            {
-                AddEdge(edges,
-                    new Vector2Int(Mathf.RoundToInt(left * 1000), Mathf.RoundToInt(bottom * 1000)),
-                    new Vector2Int(Mathf.RoundToInt(left * 1000), Mathf.RoundToInt(top * 1000)));
-            }
+
+            Vector3[] points = new Vector3[4];
+            points[0] = new Vector3(left, GetY(left, bottom), bottom);
+            points[1] = new Vector3(left, GetY(left, top), top);
+            points[2] = new Vector3(right, GetY(right, top), top);
+            points[3] = new Vector3(right, GetY(right, bottom), bottom);
+
+            lr.positionCount = 4;
+            lr.SetPositions(points);
+
+            cellRenderers.Add(lr);
         }
-
-        // エッジを繋いでポリゴンの頂点順序にする
-        List<Vector3> orderedPoints = OrderEdgesIntoLoop(edges);
-
-        if (orderedPoints.Count == 0)
-        {
-            ropeRenderer.positionCount = 0;
-            return;
-        }
-
-        // Y座標をTerrainの高さに合わせる
-        for (int i = 0; i < orderedPoints.Count; i++)
-        {
-            Vector3 p = orderedPoints[i];
-            if (VoxelWorld.Instance != null)
-            {
-                p.y = VoxelWorld.Instance.GetSurfaceWorldY(p.x, p.z) + 0.15f; // 地面から少し浮かせる
-            }
-            else
-            {
-                p.y = 0.15f;
-            }
-            orderedPoints[i] = p;
-        }
-
-        ropeRenderer.positionCount = orderedPoints.Count;
-        ropeRenderer.SetPositions(orderedPoints.ToArray());
-    }
-
-    private void AddEdge(HashSet<(Vector2Int, Vector2Int)> edges, Vector2Int a, Vector2Int b)
-    {
-        edges.Add((a, b));
-    }
-
-    /// <summary>
-    /// エッジのリストを繋いで、連続した頂点ループに変換する。
-    /// </summary>
-    private List<Vector3> OrderEdgesIntoLoop(HashSet<(Vector2Int, Vector2Int)> edges)
-    {
-        if (edges.Count == 0) return new List<Vector3>();
-
-        // 隣接リストを構築
-        Dictionary<Vector2Int, List<Vector2Int>> adjacency = new Dictionary<Vector2Int, List<Vector2Int>>();
-        foreach (var (a, b) in edges)
-        {
-            if (!adjacency.ContainsKey(a)) adjacency[a] = new List<Vector2Int>();
-            adjacency[a].Add(b);
-        }
-
-        List<Vector3> result = new List<Vector3>();
-        HashSet<(Vector2Int, Vector2Int)> visited = new HashSet<(Vector2Int, Vector2Int)>();
-
-        // 最初のエッジから開始
-        var firstEdge = default((Vector2Int, Vector2Int));
-        foreach (var e in edges) { firstEdge = e; break; }
-
-        Vector2Int current = firstEdge.Item1;
-        Vector2Int start = current;
-
-        result.Add(new Vector3(current.x / 1000f, 0, current.y / 1000f));
-
-        int maxIterations = edges.Count + 10; // 安全弁
-        int iterations = 0;
-
-        while (iterations < maxIterations)
-        {
-            iterations++;
-            bool found = false;
-
-            if (adjacency.ContainsKey(current))
-            {
-                foreach (var next in adjacency[current])
-                {
-                    if (visited.Contains((current, next))) continue;
-
-                    visited.Add((current, next));
-                    current = next;
-
-                    if (current == start && result.Count > 2)
-                    {
-                        // ループ完了
-                        return result;
-                    }
-
-                    result.Add(new Vector3(current.x / 1000f, 0, current.y / 1000f));
-                    found = true;
-                    break;
-                }
-            }
-
-            if (!found) break; // 行き止まり（L字型など複雑な形状の場合）
-        }
-
-        return result;
     }
 
     /// <summary>
@@ -277,9 +194,15 @@ public class StockpileZone : MonoBehaviour
     /// </summary>
     public void SetRopeTexture(Texture2D ropeTexture)
     {
-        if (ropeRenderer != null && ropeTexture != null)
+        if (ropeTexture != null)
         {
-            ropeRenderer.material.mainTexture = ropeTexture;
+            foreach (var lr in cellRenderers)
+            {
+                if (lr != null && lr.material != null)
+                {
+                    lr.material.mainTexture = ropeTexture;
+                }
+            }
         }
     }
 }

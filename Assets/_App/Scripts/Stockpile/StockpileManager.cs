@@ -94,4 +94,18 @@ public class StockpileManager : MonoBehaviour
         }
         return false;
     }
+
+    /// <summary>
+    /// 指定のグリッド座標がいずれかの備蓄場ゾーンの中にあるか判定する。
+    /// 備蓄場に保管されたアイテムをNPCが再度拾いに行くのを防ぐために使用。
+    /// </summary>
+    public bool IsInsideAnyZone(Vector2Int gridPos)
+    {
+        foreach (var zone in zones)
+        {
+            if (zone == null) continue;
+            if (zone.ContainsCell(gridPos)) return true;
+        }
+        return false;
+    }
 }

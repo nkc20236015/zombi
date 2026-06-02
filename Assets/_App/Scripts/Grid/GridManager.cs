@@ -117,6 +117,12 @@ public class GridManager : MonoBehaviour
         // ドロップアイテムがあるマスには建築不可
         if (ItemDropManager.Instance != null && ItemDropManager.Instance.HasItemAt(gp)) return false;
 
+        // 備蓄場には建築不可
+        if (StockpileManager.Instance != null && StockpileManager.Instance.IsInsideAnyZone(gp)) return false;
+
+        // 木があるマスには建築不可
+        if (VoxelWorld.Instance != null && VoxelWorld.Instance.HasTreeAt(gp)) return false;
+
         // 全てのNPCが立っているセルには設置不可
         if (GameManager.Instance != null && GameManager.Instance.NPCs != null)
         {

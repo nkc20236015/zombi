@@ -24,6 +24,10 @@ public class TimeManager : MonoBehaviour
 
     private int currentPhaseIndex = 0;
     private float timeInCurrentPhase = 0f;
+    private float totalDaySeconds = 1080f;
+
+    [Header("UI")]
+    [SerializeField] private TMPro.TextMeshProUGUI watchText;
 
 
     void Awake()
@@ -35,6 +39,18 @@ public class TimeManager : MonoBehaviour
     void Start()
     {
         if (phases == null || phases.Length == 0) return;
+
+        totalDaySeconds = 0f;
+        foreach (var p in phases)
+        {
+            totalDaySeconds += p.durationSeconds;
+        }
+
+        if (watchText == null)
+        {
+            GameObject watchObj = GameObject.Find("watch");
+            if (watchObj != null) watchText = watchObj.GetComponent<TMPro.TextMeshProUGUI>();
+        }
 
         // Set initial skybox
         if (phases[0].skyboxMaterial != null)
@@ -96,5 +112,34 @@ public class TimeManager : MonoBehaviour
         Quaternion currentRot = Quaternion.Euler(currentPhase.lightRotation);
         Quaternion nextRot = Quaternion.Euler(nextPhase.lightRotation);
         directionalLight.transform.rotation = Quaternion.Slerp(currentRot, nextRot, t);
+
+        UpdateClockUI();
+    }
+
+    private void UpdateClockUI()
+    {
+        if (watchText == null || totalDaySeconds <= 0f) return;
+
+        float totalSecondsToday = 0f;
+        for (int i = 0; i < currentPhaseIndex; i++)
+        {
+            totalSecondsToday += phases[i].durationSeconds;
+        }
+        totalSecondsToday += timeInCurrentPhase;
+
+        // 1仮想日 = 24時間 = 1440分
+        float simulatedMinutesToday = (totalSecondsToday / totalDaySeconds) * 1440f;
+        
+        // 朝 05:00 からスタートするため 5時間分(300分) を足す
+        simulatedMinutesToday += 300f;
+        if (simulatedMinutesToday >= 1440f)
+        {
+            simulatedMinutesToday -= 1440f;
+        }
+
+        int hours = Mathf.FloorToInt(simulatedMinutesToday / 60f);
+        int minutes = Mathf.FloorToInt(simulatedMinutesToday % 60f);
+
+        watchText.text = $"{hours:D2}:{minutes:D2}";
     }
 }

@@ -89,6 +89,7 @@ public class ItemDropManager : MonoBehaviour
                 
                 GameObject dropObj = new GameObject($"DroppedWood_{pos.x}_{pos.y}");
                 dropObj.transform.position = worldPos;
+                dropObj.transform.parent = transform; // ヒエラルキー整理のため親を設定
 
                 DroppedResource newResource = dropObj.AddComponent<DroppedResource>();
                 
@@ -125,8 +126,10 @@ public class ItemDropManager : MonoBehaviour
 
     /// <summary>
     /// NPC用: 最も近い落ちているリソースを探す。
+    /// 備蓄場の中に保管されているアイテムは対象外とする。
+    /// typeFilterが指定されている場合、その種類のリソースのみを対象にする。
     /// </summary>
-    public DroppedResource FindNearestDroppedResource(Vector3 npcPosition)
+    public DroppedResource FindNearestDroppedResource(Vector3 npcPosition, ResourceType? typeFilter = null)
     {
         DroppedResource nearest = null;
         float nearestDist = float.MaxValue;
@@ -134,6 +137,13 @@ public class ItemDropManager : MonoBehaviour
         foreach (var kvp in gridItems)
         {
             if (kvp.Value == null) continue;
+
+            if (typeFilter.HasValue && kvp.Value.Type != typeFilter.Value) continue;
+
+            // 備蓄場内のアイテムはスキップ（再拾い防止）
+            if (StockpileManager.Instance != null && StockpileManager.Instance.IsInsideAnyZone(kvp.Key))
+                continue;
+
             float dist = Vector3.Distance(npcPosition, kvp.Value.transform.position);
             if (dist < nearestDist)
             {
@@ -173,10 +183,19 @@ public class ItemDropManager : MonoBehaviour
     }
 
     /// <summary>
-    /// 落ちているアイテムが1つでも存在するか
+    /// 備蓄場の外に落ちているアイテムが1つでも存在するか。
+    /// 備蓄場内のアイテムは「運搬済み」として無視する。
     /// </summary>
     public bool HasAnyDroppedItems()
     {
-        return gridItems.Count > 0;
+        foreach (var kvp in gridItems)
+        {
+            if (kvp.Value == null) continue;
+            // 備蓄場内のアイテムは除外
+            if (StockpileManager.Instance != null && StockpileManager.Instance.IsInsideAnyZone(kvp.Key))
+                continue;
+            return true; // 備蓄場外のアイテムが1つでもあれば true
+        }
+        return false;
     }
 }

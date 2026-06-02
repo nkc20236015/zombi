@@ -119,22 +119,10 @@ public class ResourceNode : MonoBehaviour
 
             var sr = markerObj.AddComponent<SpriteRenderer>();
             sr.sortingOrder = 10;
-            // アイコンの設定
-#if UNITY_EDITOR
-            // UIicon フォルダから斧アイコンを検索
-            string[] axeGuids = UnityEditor.AssetDatabase.FindAssets("Axe t:Texture2D", new[] { "Assets/UIicon" });
-            if (axeGuids.Length == 0)
-                axeGuids = UnityEditor.AssetDatabase.FindAssets("Axe t:Texture2D");
-            if (axeGuids.Length > 0)
+            if (Zombi.UI.CursorManager.Instance != null && Zombi.UI.CursorManager.Instance.axeIconSprite != null)
             {
-                string path = UnityEditor.AssetDatabase.GUIDToAssetPath(axeGuids[0]);
-                Texture2D tex = UnityEditor.AssetDatabase.LoadAssetAtPath<Texture2D>(path);
-                if (tex != null)
-                {
-                    sr.sprite = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(0.5f, 0.5f), 32f);
-                }
+                sr.sprite = Zombi.UI.CursorManager.Instance.axeIconSprite;
             }
-#endif
 
             taskMarker = markerObj.AddComponent<TaskMarker>();
         }

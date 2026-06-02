@@ -21,6 +21,9 @@ namespace Zombi.UI
         [Tooltip("キャンセルモード時の右上に表示するアイコン（赤いバツ印など）")]
         public Sprite cancelIconSprite;
 
+        [Tooltip("備蓄場作成モード時の右上に表示するアイコン")]
+        public Sprite stockpileIconSprite;
+
         [Header("UI References (Auto-generated if left empty)")]
         [SerializeField] private RectTransform cursorRoot;
         [SerializeField] private Image mainCursorImage;
@@ -130,6 +133,11 @@ namespace Zombi.UI
             {
                 subIconImage.gameObject.SetActive(true);
                 subIconImage.sprite = cancelIconSprite;
+            }
+            else if (mode == PlayerMode.StockpileZoning)
+            {
+                subIconImage.gameObject.SetActive(true);
+                subIconImage.sprite = stockpileIconSprite;
             }
             else
             {

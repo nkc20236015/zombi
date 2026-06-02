@@ -85,6 +85,7 @@ public class BuildingManager : MonoBehaviour
         Vector3 targetCenter = new Vector3(wp.x, wp.y + VoxelData.BlockHeight * 0.5f, wp.z);
 
         GameObject block = Instantiate(blockPrefabs[selectedBlockIndex], Vector3.zero, Quaternion.identity);
+        block.transform.parent = transform; // ヒエラルキー整理のため親を設定
 
         // ブロックのスケールをVoxelWorldのブロックサイズに合わせる
         EnsureBlockScale(block);
@@ -97,6 +98,18 @@ public class BuildingManager : MonoBehaviour
             return;
         }
 
+        // 物理コライダーの追加処理
+        // プレハブに最初から独自のコライダーが設定されている場合はそれを優先し、
+        // 設定されていない場合のみ、グリッドサイズに合わせたデフォルトのコライダーを追加する
+        var boxCol = block.GetComponent<BoxCollider>();
+        if (boxCol == null)
+        {
+            boxCol = block.AddComponent<BoxCollider>();
+            // VoxelWorldのブロックサイズに合わせたデフォルトサイズ
+            boxCol.size = new Vector3(VoxelData.BlockWidth, VoxelData.BlockHeight, VoxelData.BlockDepth);
+            boxCol.center = new Vector3(0.2f, -0.26f, -0.2f);
+        }
+
         // NavMeshObstacleを追加してプレイヤーの通り抜けを防止
         if (block.GetComponent<UnityEngine.AI.NavMeshObstacle>() == null)
         {
@@ -104,19 +117,9 @@ public class BuildingManager : MonoBehaviour
             obstacle.carving = true;
             obstacle.carveOnlyStationary = true;
             obstacle.shape = UnityEngine.AI.NavMeshObstacleShape.Box;
-            // ブロックのコライダーに合わせたサイズ
-            var boxCol = block.GetComponent<BoxCollider>();
-            if (boxCol != null)
-            {
-                obstacle.center = boxCol.center;
-                obstacle.size = boxCol.size;
-            }
-            else
-            {
-                // VoxelWorldのブロックサイズに合わせたデフォルト
-                obstacle.size = new Vector3(VoxelData.BlockWidth, VoxelData.BlockHeight, VoxelData.BlockDepth);
-                obstacle.center = new Vector3(0, VoxelData.BlockHeight * 0.5f, 0);
-            }
+            // 物理コライダーのサイズを基に障害物のサイズを設定
+            obstacle.center = boxCol.center;
+            obstacle.size = boxCol.size;
         }
     }
 

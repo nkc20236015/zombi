@@ -12,7 +12,7 @@ public class NPCController : MonoBehaviour
     [SerializeField] private float gatherInterval = 2.0f; // 採取アニメーション間隔（秒）
 
     [Header("Hauling Settings")]
-    [SerializeField] private int maxCarryAmount = 50; // 1回に運べる最大量
+    [SerializeField] private int maxCarryAmount = 200; // 1回に運べる最大量
     [SerializeField] private float haulingCheckInterval = 3.0f; // 運搬可否チェック間隔
 
     [Header("Wander Settings")]
@@ -554,6 +554,9 @@ public class NPCController : MonoBehaviour
     /// </summary>
     private bool TryStartHauling()
     {
+        // 伐採タスクが残っている場合は運搬しない（タスク優先）
+        if (TaskManager.Instance != null && TaskManager.Instance.GatherTasks.Count > 0) return false;
+
         if (ItemDropManager.Instance == null || StockpileManager.Instance == null) return false;
         if (!ItemDropManager.Instance.HasAnyDroppedItems()) return false;
         if (!StockpileManager.Instance.HasAnyAvailableSpace()) return false;
@@ -603,30 +606,63 @@ public class NPCController : MonoBehaviour
     }
 
     /// <summary>
-    /// アイテムを拾う。拾ったらCarryingステートへ移行。
+    /// アイテムを拾う。まだ持てる量に余裕があり、近くに同じアイテムが落ちていれば拾いに行く。
+    /// 満杯になるか、もう落ちていなければCarryingステートへ移行。
     /// </summary>
     private void PickUpItem()
     {
         if (haulTarget == null || ItemDropManager.Instance == null)
         {
-            StopHauling();
+            if (carryingAmount > 0)
+            {
+                GoToStockpile();
+            }
+            else
+            {
+                StopHauling();
+            }
             return;
         }
 
-        // アイテムを回収
-        carryingResourceType = haulTarget.Type;
-        carryingAmount = ItemDropManager.Instance.PickUpResource(haulTarget, maxCarryAmount);
+        // 初回拾いかどうかのチェック
+        if (carryingAmount == 0)
+        {
+            carryingResourceType = haulTarget.Type;
+        }
+
+        // アイテムを回収 (持てる空き容量分だけ拾う)
+        int spaceLeft = maxCarryAmount - carryingAmount;
+        int taken = ItemDropManager.Instance.PickUpResource(haulTarget, spaceLeft);
+        carryingAmount += taken;
         haulTarget = null;
 
-        if (carryingAmount <= 0)
+        Debug.Log($"[NPCController] {gameObject.name}: {carryingResourceType} を {taken} 個拾った (現在 {carryingAmount}/{maxCarryAmount})");
+
+        // まだ持てる余裕があるか
+        if (carryingAmount < maxCarryAmount)
         {
-            StopHauling();
-            return;
+            // 同じ種類のアイテムが近くに落ちているか探す
+            DroppedResource nextTarget = ItemDropManager.Instance.FindNearestDroppedResource(transform.position, carryingResourceType);
+            if (nextTarget != null)
+            {
+                // 見つかった場合は次のアイテムへ向かう（Hauling継続）
+                haulTarget = nextTarget;
+                agent.isStopped = false;
+                agent.speed = defaultMoveSpeed;
+                agent.SetDestination(haulTarget.transform.position);
+                Debug.Log($"[NPCController] {gameObject.name}: まだ持てるので次の {carryingResourceType} を拾いに行く");
+                return; // ここで終了。UpdateHaulingStateで到着を待つ
+            }
         }
 
-        Debug.Log($"[NPCController] {gameObject.name}: {carryingResourceType} x{carryingAmount} を拾った！備蓄場へ運ぶ");
+        // 満杯になった、または近くにもうアイテムがない場合は備蓄場へ向かう
+        GoToStockpile();
+    }
 
-        // 備蓄場へ向かう
+    private void GoToStockpile()
+    {
+        Debug.Log($"[NPCController] {gameObject.name}: {carryingResourceType} x{carryingAmount} を備蓄場へ運ぶ");
+
         if (StockpileManager.Instance != null &&
             StockpileManager.Instance.TryGetNearestAvailableCell(transform.position, out StockpileZone zone, out Vector2Int cell))
         {
@@ -635,13 +671,14 @@ public class NPCController : MonoBehaviour
 
             Vector3 targetWorldPos = GridManager.Instance.GridToWorld(carryTargetCell);
             agent.isStopped = false;
-            agent.speed = defaultMoveSpeed * wanderSpeedMultiplier; // 運搬中はゆっくり歩く
+            agent.speed = defaultMoveSpeed * wanderSpeedMultiplier; // 運搬中は少しゆっくり歩く
             agent.SetDestination(targetWorldPos);
             SetState(NPCState.Carrying);
         }
         else
         {
-            // 備蓄場がない！その場にドロップし直す
+            // 備蓄場がいっぱいになった、または削除された！その場にドロップし直す
+            Debug.LogWarning($"[NPCController] {gameObject.name}: 備蓄場の空きがないためその場に落とします。");
             DropCarriedItems();
             StopHauling();
         }

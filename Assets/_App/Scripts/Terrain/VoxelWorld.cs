@@ -505,6 +505,9 @@ public class VoxelWorld : MonoBehaviour
         go.transform.parent = transform; // VoxelWorldの子に
         go.name = prefab.name + "_Spawned";
 
+        // レイキャスト（クリック判定）に引っかかるよう、Resourceレイヤーに設定
+        SetLayerRecursively(go, LayerMask.NameToLayer("Resource"));
+
         // TerrainDataから木を削除する（再構築）
         List<TreeInstance> newList = new List<TreeInstance>(instances);
         newList.RemoveAt(treeIndex);
@@ -515,6 +518,17 @@ public class VoxelWorld : MonoBehaviour
         if (tc != null) tc.terrainData = generatedTerrainData;
 
         return go;
+    }
+
+    private void SetLayerRecursively(GameObject obj, int newLayer)
+    {
+        if (obj == null) return;
+        obj.layer = newLayer;
+        foreach (Transform child in obj.transform)
+        {
+            if (child == null) continue;
+            SetLayerRecursively(child.gameObject, newLayer);
+        }
     }
 
     // ==================== Scene Object Repositioning ====================
@@ -601,6 +615,100 @@ public class VoxelWorld : MonoBehaviour
         }
         // フォールバック
         return surfaceBaseHeight * VoxelData.BlockHeight;
+    }
+
+    /// <summary>
+    /// 指定のグリッド座標（1x1ブロック範囲内）に木（TerrainTree）が存在するかどうかを返す。
+    /// </summary>
+    public bool HasTreeAt(Vector2Int gridPos)
+    {
+        if (generatedTerrainData == null) return false;
+
+        float cellMinX = gridPos.x * VoxelData.BlockWidth;
+        float cellMaxX = cellMinX + VoxelData.BlockWidth;
+        float cellMinZ = gridPos.y * VoxelData.BlockDepth;
+        float cellMaxZ = cellMinZ + VoxelData.BlockDepth;
+
+        Vector3 terrainSize = generatedTerrainData.size;
+
+        foreach (var tree in generatedTerrainData.treeInstances)
+        {
+            float treeX = tree.position.x * terrainSize.x;
+            float treeZ = tree.position.z * terrainSize.z;
+
+            // 木の中心座標がセルの範囲内に収まっているか判定
+            if (treeX >= cellMinX && treeX < cellMaxX && treeZ >= cellMinZ && treeZ < cellMaxZ)
+            {
+                return true;
+            }
+        }
+
+        // すでにGameObject(ResourceNode)化されている木がないかもチェックする
+        ResourceNode[] nodes = Object.FindObjectsOfType<ResourceNode>();
+        foreach(var node in nodes)
+        {
+            if (node.Type == ResourceType.Wood && node.HasResources)
+            {
+                float nx = node.transform.position.x;
+                float nz = node.transform.position.z;
+                if (nx >= cellMinX && nx < cellMaxX && nz >= cellMinZ && nz < cellMaxZ)
+                {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// 指定グリッド（1x1ブロック）の地形ディテール（生えている草など）を消す。
+    /// 備蓄場作成時などに使用し、地面のテクスチャ（スプラットマップ）は変更しない。
+    /// </summary>
+    public void ClearGrassAtGrid(Vector2Int gridPos)
+    {
+        if (generatedTerrainData == null) return;
+
+        int detailRes = generatedTerrainData.detailResolution;
+        int layerCount = generatedTerrainData.detailPrototypes.Length;
+        if (layerCount == 0) return; // 生えている草（Detail）がない場合は何もしない
+
+        // グリッド座標からワールド座標へ（ブロックサイズは1と仮定）
+        float worldMinX = gridPos.x;
+        float worldMaxX = gridPos.x + 1f;
+        float worldMinZ = gridPos.y;
+        float worldMaxZ = gridPos.y + 1f;
+
+        // ワールド座標からディテールマップの座標へ
+        int detailMinX = Mathf.FloorToInt(worldMinX / worldWidthInBlocks * detailRes);
+        int detailMaxX = Mathf.CeilToInt(worldMaxX / worldWidthInBlocks * detailRes);
+        int detailMinZ = Mathf.FloorToInt(worldMinZ / worldDepthInBlocks * detailRes);
+        int detailMaxZ = Mathf.CeilToInt(worldMaxZ / worldDepthInBlocks * detailRes);
+
+        // クランプ
+        detailMinX = Mathf.Clamp(detailMinX, 0, detailRes - 1);
+        detailMaxX = Mathf.Clamp(detailMaxX, 0, detailRes - 1);
+        detailMinZ = Mathf.Clamp(detailMinZ, 0, detailRes - 1);
+        detailMaxZ = Mathf.Clamp(detailMaxZ, 0, detailRes - 1);
+
+        int width = detailMaxX - detailMinX;
+        int height = detailMaxZ - detailMinZ;
+
+        if (width <= 0 || height <= 0) return;
+
+        // すべてのディテールレイヤー（grass02等の草）の密度を0にして消す
+        for (int l = 0; l < layerCount; l++)
+        {
+            int[,] detailData = generatedTerrainData.GetDetailLayer(detailMinX, detailMinZ, width, height, l);
+            for (int z = 0; z < height; z++)
+            {
+                for (int x = 0; x < width; x++)
+                {
+                    detailData[z, x] = 0;
+                }
+            }
+            generatedTerrainData.SetDetailLayer(detailMinX, detailMinZ, l, detailData);
+        }
     }
 
     // ==================== NavMesh ====================

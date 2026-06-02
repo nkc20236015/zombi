@@ -48,6 +48,11 @@ public class CommandManager : MonoBehaviour
     private MeshRenderer zoningPreviewRenderer;
     private LineRenderer zoningBorderRenderer;
 
+    // Zoning用ホバープレビュー
+    private GameObject zoningHoverObject;
+    private MeshRenderer zoningHoverRenderer;
+    private LineRenderer zoningHoverBorderRenderer;
+
     void Awake()
     {
         if (Instance != null && Instance != this) { Destroy(gameObject); return; }
@@ -77,7 +82,8 @@ public class CommandManager : MonoBehaviour
 
         // 塗りつぶし用（地面に張り付く板）
         selectionAreaObject = GameObject.CreatePrimitive(PrimitiveType.Cube);
-        selectionAreaObject.name = "SelectionAreaProjector";
+        selectionAreaObject.name = "SelectionAreaPreview";
+        selectionAreaObject.transform.parent = transform;
         Destroy(selectionAreaObject.GetComponent<Collider>()); // 衝突判定は不要
 
         selectionRenderer = selectionAreaObject.GetComponent<MeshRenderer>();
@@ -103,6 +109,7 @@ public class CommandManager : MonoBehaviour
         // Zoning用のプレビューオブジェクト
         zoningPreviewObject = GameObject.CreatePrimitive(PrimitiveType.Cube);
         zoningPreviewObject.name = "ZoningPreview";
+        zoningPreviewObject.transform.parent = transform;
         Destroy(zoningPreviewObject.GetComponent<Collider>());
 
         zoningPreviewRenderer = zoningPreviewObject.GetComponent<MeshRenderer>();
@@ -123,6 +130,31 @@ public class CommandManager : MonoBehaviour
         zoningBorderRenderer.receiveShadows = false;
 
         zoningPreviewObject.SetActive(false);
+
+        // Zoning用ホバープレビューオブジェクト
+        zoningHoverObject = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        zoningHoverObject.name = "ZoningHoverPreview";
+        zoningHoverObject.transform.parent = transform;
+        Destroy(zoningHoverObject.GetComponent<Collider>());
+
+        zoningHoverRenderer = zoningHoverObject.GetComponent<MeshRenderer>();
+        zoningHoverRenderer.material = zoningMaterial;
+        zoningHoverRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        zoningHoverRenderer.receiveShadows = false;
+
+        zoningHoverBorderRenderer = zoningHoverObject.AddComponent<LineRenderer>();
+        zoningHoverBorderRenderer.useWorldSpace = true;
+        zoningHoverBorderRenderer.loop = true;
+        zoningHoverBorderRenderer.positionCount = 4;
+        zoningHoverBorderRenderer.startWidth = 0.04f;
+        zoningHoverBorderRenderer.endWidth = 0.04f;
+        zoningHoverBorderRenderer.material = new Material(shader);
+        zoningHoverBorderRenderer.startColor = new Color(0.5f, 0.8f, 1f, 0.8f);
+        zoningHoverBorderRenderer.endColor = new Color(0.5f, 0.8f, 1f, 0.8f);
+        zoningHoverBorderRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        zoningHoverBorderRenderer.receiveShadows = false;
+
+        zoningHoverObject.SetActive(false);
     }
 
     void Update()
@@ -151,7 +183,15 @@ public class CommandManager : MonoBehaviour
         if (mode == PlayerMode.StockpileZoning)
         {
             HandleZoningInput();
+            UpdateZoningHover();
             return;
+        }
+        else
+        {
+            if (zoningHoverObject != null && zoningHoverObject.activeSelf)
+            {
+                zoningHoverObject.SetActive(false);
+            }
         }
 
         // Gathering または Cancelling モードではドラッグ範囲選択を処理
@@ -286,6 +326,60 @@ public class CommandManager : MonoBehaviour
     // ==================== Stockpile Zoning Input ====================
 
     /// <summary>
+    /// ホバー時の1マスプレビュー表示
+    /// </summary>
+    private void UpdateZoningHover()
+    {
+        // UI上またはドラッグ中は非表示
+        if ((UnityEngine.EventSystems.EventSystem.current != null &&
+            UnityEngine.EventSystems.EventSystem.current.IsPointerOverGameObject()) || isZoningDrag)
+        {
+            zoningHoverObject.SetActive(false);
+            return;
+        }
+
+        if (GridManager.Instance == null) return;
+
+        if (GridManager.Instance.TryGetGridPositionFromMouse(out Vector2Int gridPos))
+        {
+            zoningHoverObject.SetActive(true);
+
+            float cellSizeX = GridManager.Instance.CellSizeX;
+            float cellSizeZ = GridManager.Instance.CellSizeZ;
+            Vector3 origin = GridManager.Instance.GridOrigin;
+
+            float worldMinX = gridPos.x * cellSizeX + origin.x;
+            float worldMaxX = (gridPos.x + 1) * cellSizeX + origin.x;
+            float worldMinZ = gridPos.y * cellSizeZ + origin.z;
+            float worldMaxZ = (gridPos.y + 1) * cellSizeZ + origin.z;
+
+            float sizeX = worldMaxX - worldMinX;
+            float sizeZ = worldMaxZ - worldMinZ;
+            float centerX = worldMinX + sizeX / 2f;
+            float centerZ = worldMinZ + sizeZ / 2f;
+
+            float yPos = 0.05f;
+            if (VoxelWorld.Instance != null)
+            {
+                yPos = VoxelWorld.Instance.GetSurfaceWorldY(centerX, centerZ) + 0.05f;
+            }
+
+            zoningHoverObject.transform.position = new Vector3(centerX, yPos, centerZ);
+            zoningHoverObject.transform.localScale = new Vector3(sizeX, 0.01f, sizeZ);
+
+            float lineY = yPos + 0.02f;
+            zoningHoverBorderRenderer.SetPosition(0, new Vector3(worldMinX, lineY, worldMinZ));
+            zoningHoverBorderRenderer.SetPosition(1, new Vector3(worldMinX, lineY, worldMaxZ));
+            zoningHoverBorderRenderer.SetPosition(2, new Vector3(worldMaxX, lineY, worldMaxZ));
+            zoningHoverBorderRenderer.SetPosition(3, new Vector3(worldMaxX, lineY, worldMinZ));
+        }
+        else
+        {
+            zoningHoverObject.SetActive(false);
+        }
+    }
+
+    /// <summary>
     /// 備蓄場作成モードのドラッグ入力処理。マス目にスナップする。
     /// </summary>
     private void HandleZoningInput()
@@ -345,6 +439,19 @@ public class CommandManager : MonoBehaviour
         float cellSizeZ = GridManager.Instance.CellSizeZ;
         Vector3 origin = GridManager.Instance.GridOrigin;
 
+        // エリア内に建築物や木がないかチェック
+        bool isValid = true;
+        for (int x = minX; x <= maxX; x++)
+        {
+            for (int z = minZ; z <= maxZ; z++)
+            {
+                Vector2Int pos = new Vector2Int(x, z);
+                GridCell cell = GridManager.Instance.GetCell(pos);
+                if (cell != null && cell.State != CellState.Empty) isValid = false;
+                if (VoxelWorld.Instance != null && VoxelWorld.Instance.HasTreeAt(pos)) isValid = false;
+            }
+        }
+
         // ワールド座標に変換（グリッドの辺にスナップ）
         float worldMinX = minX * cellSizeX + origin.x;
         float worldMaxX = (maxX + 1) * cellSizeX + origin.x;
@@ -367,6 +474,10 @@ public class CommandManager : MonoBehaviour
 
         // 枠線（ロープのプレビュー）
         float lineY = yPos + 0.02f;
+        Color borderColor = isValid ? new Color(1f, 0.8f, 0.2f, 0.8f) : new Color(1f, 0.3f, 0.3f, 0.8f);
+        zoningBorderRenderer.startColor = borderColor;
+        zoningBorderRenderer.endColor = borderColor;
+        
         zoningBorderRenderer.SetPosition(0, new Vector3(worldMinX, lineY, worldMinZ));
         zoningBorderRenderer.SetPosition(1, new Vector3(worldMinX, lineY, worldMaxZ));
         zoningBorderRenderer.SetPosition(2, new Vector3(worldMaxX, lineY, worldMaxZ));
@@ -384,6 +495,26 @@ public class CommandManager : MonoBehaviour
         int maxX = Mathf.Max(zoningGridStart.x, zoningGridCurrent.x);
         int minZ = Mathf.Min(zoningGridStart.y, zoningGridCurrent.y);
         int maxZ = Mathf.Max(zoningGridStart.y, zoningGridCurrent.y);
+
+        // エリア内に建築物や木がないか最終チェック
+        for (int x = minX; x <= maxX; x++)
+        {
+            for (int z = minZ; z <= maxZ; z++)
+            {
+                Vector2Int pos = new Vector2Int(x, z);
+                GridCell cell = GridManager.Instance.GetCell(pos);
+                if (cell != null && cell.State != CellState.Empty) 
+                {
+                    Debug.LogWarning("[CommandManager] 建築物があるため備蓄場を作成できません");
+                    return;
+                }
+                if (VoxelWorld.Instance != null && VoxelWorld.Instance.HasTreeAt(pos))
+                {
+                    Debug.LogWarning("[CommandManager] 木があるため備蓄場を作成できません");
+                    return;
+                }
+            }
+        }
 
         Vector2Int gridMin = new Vector2Int(minX, minZ);
         Vector2Int gridMax = new Vector2Int(maxX, maxZ);
