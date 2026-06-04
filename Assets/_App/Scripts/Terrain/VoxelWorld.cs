@@ -59,6 +59,10 @@ public class VoxelWorld : MonoBehaviour
     [SerializeField] private float speciesNoiseScale = 0.015f; // 種族ゾーンの大きさ
     [SerializeField] private int safeRadius = 10;
 
+    [Header("Mushrooms")]
+    [SerializeField] private GameObject mushroomPrefab;
+    [SerializeField] private float mushroomSpawnProbability = 0.3f;
+
     // 内部ボクセルデータ（将来の掘削用に保持）
     private BlockType[,,] worldBlocks;
 
@@ -396,7 +400,18 @@ public class VoxelWorld : MonoBehaviour
         }
 
         int treeCount = 0;
+        int mushroomCount = 0;
         List<TreeInstance> treeInstancesList = new List<TreeInstance>();
+
+        GameObject mushroomParentObj = new GameObject("Mushrooms");
+        Transform mushroomParent = mushroomParentObj.transform;
+        mushroomParent.SetParent(transform);
+
+        // Pre-load Mushroom Prefab in Editor Mode if missing
+#if UNITY_EDITOR
+        if (mushroomPrefab == null)
+            mushroomPrefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Low Poly Mushrooms Pack/Prefabs/Mushrooms/MushroomGroup.prefab");
+#endif
 
         for (int x = 0; x < worldWidthInBlocks; x++)
         {
@@ -465,6 +480,38 @@ public class VoxelWorld : MonoBehaviour
 
                 occupiedPositions.Add(new Vector2Int(x, z));
                 treeCount++;
+
+                // キノコ生成判定（木の周辺にスポーン）
+                if (mushroomPrefab != null && Random.value < mushroomSpawnProbability)
+                {
+                    // 木の周囲の空いているマスを探す（簡易的に十字方向のいずれか）
+                    Vector2Int[] offsets = { new Vector2Int(1, 0), new Vector2Int(-1, 0), new Vector2Int(0, 1), new Vector2Int(0, -1) };
+                    Vector2Int offset = offsets[Random.Range(0, 4)];
+                    Vector2Int mPos = new Vector2Int(x + offset.x, z + offset.y);
+                    
+                    if (mPos.x >= 0 && mPos.x < worldWidthInBlocks && mPos.y >= 0 && mPos.y < worldDepthInBlocks && !occupiedPositions.Contains(mPos))
+                    {
+                        float mX = mPos.x * VoxelData.BlockWidth + VoxelData.BlockWidth * 0.5f;
+                        float mZ = mPos.y * VoxelData.BlockDepth + VoxelData.BlockDepth * 0.5f;
+                        float mY = GetSurfaceWorldY(mX, mZ);
+
+                        // マップ中心からのオフセットを加算
+                        mX += transform.position.x;
+                        mZ += transform.position.z;
+
+                        GameObject mushroomObj = Instantiate(mushroomPrefab, new Vector3(mX, mY, mZ), Quaternion.Euler(0, Random.Range(0f, 360f), 0));
+                        mushroomObj.transform.SetParent(mushroomParent);
+                        
+                        ResourceNode rNode = mushroomObj.GetComponent<ResourceNode>();
+                        if (rNode != null)
+                        {
+                            rNode.SetGridPosition(mPos);
+                        }
+                        
+                        occupiedPositions.Add(mPos);
+                        mushroomCount++;
+                    }
+                }
             }
         }
 
@@ -475,7 +522,7 @@ public class VoxelWorld : MonoBehaviour
         if (tc == null) tc = generatedTerrain.gameObject.AddComponent<TerrainCollider>();
         tc.terrainData = generatedTerrainData;
 
-        Debug.Log($"[VoxelWorld] Terrain Tree の自動生成完了: {treeCount}本");
+        Debug.Log($"[VoxelWorld] Terrain Tree の自動生成完了: {treeCount}本, キノコ生成完了: {mushroomCount}個");
     }
 
     // ==================== Terrain Tree Interaction ====================
