@@ -22,6 +22,8 @@ public class HUDManager : MonoBehaviour
     [SerializeField] private Button axeButton;      // AxeImage に付いている Button
     [SerializeField] private Button cancelButton;   // CancelImage に付いている Button
     [SerializeField] private Button stockpileButton; // エリア作成ボタン
+    [SerializeField] private Button kamaButton;     // kamaImage に付いている Button
+    [SerializeField] private Button farmButton;     // farmImage に付いている Button
 
     // ハイライト用の色
     private Color normalButtonColor = Color.white;
@@ -62,6 +64,14 @@ public class HUDManager : MonoBehaviour
         {
             stockpileButton.onClick.AddListener(OnStockpileButtonClicked);
         }
+        if (kamaButton != null)
+        {
+            kamaButton.onClick.AddListener(OnKamaButtonClicked);
+        }
+        if (farmButton != null)
+        {
+            farmButton.onClick.AddListener(OnFarmButtonClicked);
+        }
     }
 
     private void OnDestroy()
@@ -81,6 +91,8 @@ public class HUDManager : MonoBehaviour
         if (axeButton != null) axeButton.onClick.RemoveListener(OnAxeButtonClicked);
         if (cancelButton != null) cancelButton.onClick.RemoveListener(OnCancelButtonClicked);
         if (stockpileButton != null) stockpileButton.onClick.RemoveListener(OnStockpileButtonClicked);
+        if (kamaButton != null) kamaButton.onClick.RemoveListener(OnKamaButtonClicked);
+        if (farmButton != null) farmButton.onClick.RemoveListener(OnFarmButtonClicked);
     }
 
     // ==================== Phase / Day UI ====================
@@ -214,16 +226,31 @@ public class HUDManager : MonoBehaviour
 
     private void OnStockpileButtonClicked()
     {
-        if (GameManager.Instance == null) return;
-
-        // 既にStockpileZoningモードならNormalに戻す（トグル）
-        if (GameManager.Instance.CurrentPlayerMode == PlayerMode.StockpileZoning)
+        if (GameManager.Instance != null)
         {
-            GameManager.Instance.SetPlayerMode(PlayerMode.Normal);
+            GameManager.Instance.SetPlayerMode(
+                GameManager.Instance.CurrentPlayerMode == PlayerMode.StockpileZoning ? PlayerMode.Normal : PlayerMode.StockpileZoning
+            );
         }
-        else
+    }
+
+    private void OnKamaButtonClicked()
+    {
+        if (GameManager.Instance != null)
         {
-            GameManager.Instance.SetPlayerMode(PlayerMode.StockpileZoning);
+            GameManager.Instance.SetPlayerMode(
+                GameManager.Instance.CurrentPlayerMode == PlayerMode.Cutting ? PlayerMode.Normal : PlayerMode.Cutting
+            );
+        }
+    }
+
+    private void OnFarmButtonClicked()
+    {
+        if (GameManager.Instance != null)
+        {
+            GameManager.Instance.SetPlayerMode(
+                GameManager.Instance.CurrentPlayerMode == PlayerMode.Picking ? PlayerMode.Normal : PlayerMode.Picking
+            );
         }
     }
 
@@ -232,34 +259,10 @@ public class HUDManager : MonoBehaviour
     /// </summary>
     private void UpdateTaskPanelHighlight(PlayerMode mode)
     {
-        // AxeButton のハイライト
-        if (axeButton != null)
-        {
-            Image axeImage = axeButton.GetComponent<Image>();
-            if (axeImage != null)
-            {
-                axeImage.color = (mode == PlayerMode.Gathering) ? activeButtonColor : normalButtonColor;
-            }
-        }
-
-        // CancelButton のハイライト
-        if (cancelButton != null)
-        {
-            Image cancelImage = cancelButton.GetComponent<Image>();
-            if (cancelImage != null)
-            {
-                cancelImage.color = (mode == PlayerMode.Cancelling) ? activeButtonColor : normalButtonColor;
-            }
-        }
-
-        // StockpileButton のハイライト
-        if (stockpileButton != null)
-        {
-            Image stockpileImage = stockpileButton.GetComponent<Image>();
-            if (stockpileImage != null)
-            {
-                stockpileImage.color = (mode == PlayerMode.StockpileZoning) ? activeButtonColor : normalButtonColor;
-            }
-        }
+        if (axeButton != null) axeButton.GetComponent<Image>().color = (mode == PlayerMode.Gathering) ? activeButtonColor : normalButtonColor;
+        if (cancelButton != null) cancelButton.GetComponent<Image>().color = (mode == PlayerMode.Cancelling) ? activeButtonColor : normalButtonColor;
+        if (stockpileButton != null) stockpileButton.GetComponent<Image>().color = (mode == PlayerMode.StockpileZoning) ? activeButtonColor : normalButtonColor;
+        if (kamaButton != null) kamaButton.GetComponent<Image>().color = (mode == PlayerMode.Cutting) ? activeButtonColor : normalButtonColor;
+        if (farmButton != null) farmButton.GetComponent<Image>().color = (mode == PlayerMode.Picking) ? activeButtonColor : normalButtonColor;
     }
 }

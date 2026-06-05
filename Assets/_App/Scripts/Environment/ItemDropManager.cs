@@ -14,6 +14,9 @@ public class ItemDropManager : MonoBehaviour
     public GameObject woodPrefab3; // 100-149
     public GameObject woodPrefab4; // 150-200
 
+    [Header("Food Prefab")]
+    public GameObject foodPrefab;
+
     // グリッド上のドロップアイテムを管理する辞書
     private Dictionary<Vector2Int, DroppedResource> gridItems = new Dictionary<Vector2Int, DroppedResource>();
 
@@ -28,6 +31,7 @@ public class ItemDropManager : MonoBehaviour
         if (woodPrefab2 == null) woodPrefab2 = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Static Soul Studio/Wood Pack/Built-in/Prefabs/Small Log_2.prefab");
         if (woodPrefab3 == null) woodPrefab3 = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Static Soul Studio/Wood Pack/Built-in/Prefabs/Small Log_3.prefab");
         if (woodPrefab4 == null) woodPrefab4 = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Static Soul Studio/Wood Pack/Built-in/Prefabs/Small Log_4.prefab");
+        if (foodPrefab == null) foodPrefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Low Poly Mushrooms Pack/Prefabs/Mushrooms/Amanita_little.prefab");
 #endif
     }
 
@@ -45,10 +49,10 @@ public class ItemDropManager : MonoBehaviour
     }
 
     /// <summary>
-    /// 木材を指定のグリッド位置にドロップする。
+    /// アイテムを指定のグリッド位置にドロップする。
     /// 既にスタックがある場合は統合し、最大数を超える場合は隣接マスに溢れさせる。
     /// </summary>
-    public void DropWood(Vector2Int gridPos, int amount)
+    public void DropItem(Vector2Int gridPos, int amount, ResourceType type)
     {
         if (amount <= 0 || GridManager.Instance == null) return;
 
@@ -70,7 +74,7 @@ public class ItemDropManager : MonoBehaviour
             // すでにアイテムがあるか確認
             if (gridItems.TryGetValue(pos, out DroppedResource existingResource))
             {
-                if (existingResource.Type == ResourceType.Wood)
+                if (existingResource.Type == type)
                 {
                     int spaceLeft = maxWoodPerStack - existingResource.Amount;
                     if (spaceLeft > 0)
@@ -87,14 +91,14 @@ public class ItemDropManager : MonoBehaviour
                 // セルの中心に配置する
                 Vector3 worldPos = GridManager.Instance.GridToWorld(pos);
                 
-                GameObject dropObj = new GameObject($"DroppedWood_{pos.x}_{pos.y}");
+                GameObject dropObj = new GameObject($"Dropped_{type}_{pos.x}_{pos.y}");
                 dropObj.transform.position = worldPos;
                 dropObj.transform.parent = transform; // ヒエラルキー整理のため親を設定
 
                 DroppedResource newResource = dropObj.AddComponent<DroppedResource>();
                 
                 int addAmount = Mathf.Min(maxWoodPerStack, remainingAmount);
-                newResource.Initialize(ResourceType.Wood, addAmount, pos);
+                newResource.Initialize(type, addAmount, pos);
                 
                 gridItems[pos] = newResource;
                 remainingAmount -= addAmount;

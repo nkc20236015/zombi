@@ -371,7 +371,12 @@ public class NPCController : MonoBehaviour
             // ツールを手に表示
             if (toolHolder != null)
             {
-                toolHolder.ShowTool(targetNode.Type);
+                bool useTool = true;
+                if (targetNode.Type == ResourceType.Food && targetNode.IsRipe)
+                {
+                    useTool = false; // 完熟時の採取は素手
+                }
+                toolHolder.ShowTool(targetNode.Type, useTool);
             }
         }
 
@@ -384,7 +389,7 @@ public class NPCController : MonoBehaviour
         if (animController == null) return;
 
         // ResourceType に応じてアクションタイプを切り替え
-        // 0 = Chop（伐採）, 1 = Mine（採掘）
+        // 0 = Chop（伐採）, 1 = Mine（採掘）, 2 = TakeItem（採取）
         int actionType = 0;
         if (targetNode != null)
         {
@@ -395,6 +400,9 @@ public class NPCController : MonoBehaviour
                     break;
                 case ResourceType.Stone:
                     actionType = 1; // Mine
+                    break;
+                case ResourceType.Food:
+                    actionType = targetNode.IsRipe ? 2 : 0; // 完熟なら採取(TakeItem), 未完熟なら切る(Chop)
                     break;
                 default:
                     actionType = 0;
@@ -713,10 +721,8 @@ public class NPCController : MonoBehaviour
         // 備蓄場にアイテムをドロップ
         if (ItemDropManager.Instance != null && GridManager.Instance != null)
         {
-            if (carryingResourceType == ResourceType.Wood)
-            {
-                ItemDropManager.Instance.DropWood(carryTargetCell, carryingAmount);
-            }
+            ItemDropManager.Instance.DropItem(carryTargetCell, carryingAmount, carryingResourceType);
+            
             // 備蓄場の保管量を更新
             if (carryTargetZone != null)
             {
@@ -757,10 +763,7 @@ public class NPCController : MonoBehaviour
         if (ItemDropManager.Instance == null || GridManager.Instance == null) return;
 
         Vector2Int dropPos = GridManager.Instance.WorldToGrid(transform.position);
-        if (carryingResourceType == ResourceType.Wood)
-        {
-            ItemDropManager.Instance.DropWood(dropPos, carryingAmount);
-        }
+        ItemDropManager.Instance.DropItem(dropPos, carryingAmount, carryingResourceType);
         carryingAmount = 0;
     }
 

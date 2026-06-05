@@ -166,10 +166,10 @@ public class CommandManager : MonoBehaviour
         // 建築モード中は何もしない
         if (mode == PlayerMode.Building) return;
 
-        // 右クリック: Gathering/Cancelling/StockpileZoning モードを解除して Normal に戻す
+        // 右クリック: Gathering/Cancelling/StockpileZoning/Cutting/Picking モードを解除して Normal に戻す
         if (Input.GetMouseButtonDown(1))
         {
-            if (mode == PlayerMode.Gathering || mode == PlayerMode.Cancelling || mode == PlayerMode.StockpileZoning)
+            if (mode == PlayerMode.Gathering || mode == PlayerMode.Cancelling || mode == PlayerMode.StockpileZoning || mode == PlayerMode.Cutting || mode == PlayerMode.Picking)
             {
                 CancelDrag();
                 CancelZoningDrag();
@@ -194,8 +194,8 @@ public class CommandManager : MonoBehaviour
             }
         }
 
-        // Gathering または Cancelling モードではドラッグ範囲選択を処理
-        if (mode == PlayerMode.Gathering || mode == PlayerMode.Cancelling)
+        // Gathering, Cutting, Picking または Cancelling モードではドラッグ範囲選択を処理
+        if (mode == PlayerMode.Gathering || mode == PlayerMode.Cutting || mode == PlayerMode.Picking || mode == PlayerMode.Cancelling)
         {
             HandleDragSelectionInput(mode);
             return;
@@ -263,13 +263,13 @@ public class CommandManager : MonoBehaviour
         {
             if (isDragging)
             {
-                if (mode == PlayerMode.Gathering) HandleGatheringDragSelect();
+                if (mode == PlayerMode.Gathering || mode == PlayerMode.Cutting || mode == PlayerMode.Picking) HandleGatheringDragSelect(mode);
                 else if (mode == PlayerMode.Cancelling) HandleCancellingDragSelect();
             }
             else
             {
                 // 単発クリックは従来のレイキャスト（クリックしたオブジェクトを直接判定）
-                if (mode == PlayerMode.Gathering) HandleGatheringClick();
+                if (mode == PlayerMode.Gathering || mode == PlayerMode.Cutting || mode == PlayerMode.Picking) HandleGatheringClick(mode);
                 else if (mode == PlayerMode.Cancelling) HandleCancellingClick();
             }
 
@@ -538,9 +538,9 @@ public class CommandManager : MonoBehaviour
     // ==================== Action Executions ====================
 
     /// <summary>
-    /// ドラッグ範囲（ワールドX/Z）内の木をまとめてタスク登録する。
+    /// ドラッグ範囲（ワールドX/Z）内の木・資源をまとめてタスク登録する。
     /// </summary>
-    private void HandleGatheringDragSelect()
+    private void HandleGatheringDragSelect(PlayerMode mode)
     {
         if (TaskManager.Instance == null) return;
 
@@ -554,7 +554,15 @@ public class CommandManager : MonoBehaviour
 
         foreach (ResourceNode node in allNodes)
         {
-            if (node == null || !node.HasResources || node.Type != ResourceType.Wood) continue;
+            if (node == null || !node.HasResources) continue;
+
+            // モードによる対象のフィルタリング
+            bool isTarget = false;
+            if (mode == PlayerMode.Gathering && node.Type == ResourceType.Wood) isTarget = true;
+            else if (mode == PlayerMode.Cutting && node.Type == ResourceType.Food && !node.IsRipe) isTarget = true;
+            else if (mode == PlayerMode.Picking && node.Type == ResourceType.Food && node.IsRipe) isTarget = true;
+
+            if (!isTarget) continue;
 
             Vector3 pos = node.transform.position;
             // ワールドのX, Z座標で範囲内か判定
@@ -589,11 +597,11 @@ public class CommandManager : MonoBehaviour
 
         if (registeredCount > 0)
         {
-            Debug.Log($"[CommandManager] ワールドドラッグ範囲選択: {registeredCount}本の木をタスク登録");
+            Debug.Log($"[CommandManager] ワールドドラッグ範囲選択({mode}): {registeredCount}個の資源をタスク登録");
         }
         else
         {
-            Debug.Log("[CommandManager] ワールドドラッグ範囲選択: 範囲内に有効な木がありません");
+            Debug.Log($"[CommandManager] ワールドドラッグ範囲選択({mode}): 範囲内に有効な資源がありません");
         }
     }
 
@@ -637,9 +645,9 @@ public class CommandManager : MonoBehaviour
     }
 
     /// <summary>
-    /// 伐採モード: クリックした木をタスクに登録する
+    /// 伐採・採取モード: クリックした資源をタスクに登録する
     /// </summary>
-    private void HandleGatheringClick()
+    private void HandleGatheringClick(PlayerMode mode)
     {
         // 1. Terrain Tree の判定
         if (TerrainTreeInteractManager.Instance != null && VoxelWorld.Instance != null)
@@ -651,10 +659,18 @@ public class CommandManager : MonoBehaviour
                 if (go != null)
                 {
                     ResourceNode tNode = go.GetComponent<ResourceNode>();
-                    if (tNode != null && tNode.HasResources && tNode.Type == ResourceType.Wood)
+                    if (tNode != null && tNode.HasResources)
                     {
-                        TaskManager.Instance?.RegisterGatherTask(tNode);
-                        return;
+                        bool isTarget = false;
+                        if (mode == PlayerMode.Gathering && tNode.Type == ResourceType.Wood) isTarget = true;
+                        else if (mode == PlayerMode.Cutting && tNode.Type == ResourceType.Food && !tNode.IsRipe) isTarget = true;
+                        else if (mode == PlayerMode.Picking && tNode.Type == ResourceType.Food && tNode.IsRipe) isTarget = true;
+
+                        if (isTarget)
+                        {
+                            TaskManager.Instance?.RegisterGatherTask(tNode);
+                            return;
+                        }
                     }
                 }
             }
@@ -665,13 +681,21 @@ public class CommandManager : MonoBehaviour
         if (Physics.Raycast(ray, out RaycastHit hit, 200f, resourceLayer))
         {
             ResourceNode node = hit.collider.GetComponentInParent<ResourceNode>();
-            if (node != null && node.HasResources && node.Type == ResourceType.Wood)
+            if (node != null && node.HasResources)
             {
-                TaskManager.Instance?.RegisterGatherTask(node);
-                return;
+                bool isTarget = false;
+                if (mode == PlayerMode.Gathering && node.Type == ResourceType.Wood) isTarget = true;
+                else if (mode == PlayerMode.Cutting && node.Type == ResourceType.Food && !node.IsRipe) isTarget = true;
+                else if (mode == PlayerMode.Picking && node.Type == ResourceType.Food && node.IsRipe) isTarget = true;
+
+                if (isTarget)
+                {
+                    TaskManager.Instance?.RegisterGatherTask(node);
+                    return;
+                }
             }
         }
-        Debug.Log("[CommandManager] 伐採モード: 有効な木が見つかりません");
+        Debug.Log($"[CommandManager] モード({mode}): 有効な対象が見つかりません");
     }
 
     /// <summary>

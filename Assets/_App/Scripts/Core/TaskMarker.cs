@@ -2,31 +2,88 @@ using UnityEngine;
 
 /// <summary>
 /// タスクマーカー（アイコン）の表示とカメラ追従を管理する。
+/// 親オブジェクト（木など）が動的に拡縮しても、アイコン自体の見た目のサイズを一定に保つ。
 /// </summary>
 public class TaskMarker : MonoBehaviour
 {
     private Camera mainCamera;
-    private SpriteRenderer spriteRenderer;
-
+    
     [SerializeField] private float bobbingSpeed = 2f;
     [SerializeField] private float bobbingAmount = 0.2f;
+    
     private Vector3 initialLocalPosition;
+    private Transform parentTransform;
+    private float targetWorldSize = 1.5f; // アイコンの目標ワールドサイズ
+    private GameObject customIconObj;     // ユーザー指定のAxeIconなどの実体
+
+    public void Initialize(Transform parent, float localY, float worldSize, GameObject customPrefab = null)
+    {
+        parentTransform = parent;
+        targetWorldSize = worldSize;
+        initialLocalPosition = new Vector3(0, localY, 0);
+        transform.localPosition = initialLocalPosition;
+
+        if (customPrefab != null)
+        {
+            customIconObj = Instantiate(customPrefab, transform);
+            
+            RectTransform rt = customIconObj.GetComponent<RectTransform>();
+            if (rt != null)
+            {
+                // UI(Image等)の場合、3D空間で表示するためにWorldSpace Canvasを追加
+                Canvas canvas = gameObject.AddComponent<Canvas>();
+                canvas.renderMode = RenderMode.WorldSpace;
+                canvas.sortingOrder = 10;
+                
+                // ピクセルサイズが大きすぎるのを防ぐため、基本サイズ(100)を基準に1x1サイズに縮小
+                float maxDim = Mathf.Max(rt.rect.width, rt.rect.height);
+                if (maxDim <= 0.01f) maxDim = 100f;
+                
+                rt.localScale = new Vector3(1f / maxDim, 1f / maxDim, 1f / maxDim);
+                rt.localPosition = Vector3.zero;
+                // UIはそのままビルボードさせると左右反転することがあるため補正
+                rt.localRotation = Quaternion.Euler(0, 180f, 0); 
+            }
+            else
+            {
+                customIconObj.transform.localPosition = Vector3.zero;
+                customIconObj.transform.localRotation = Quaternion.identity;
+            }
+            
+            // 既存のSpriteRendererがあれば消す（フォールバック用）
+            var sr = GetComponent<SpriteRenderer>();
+            if (sr != null) Destroy(sr);
+        }
+    }
 
     void Awake()
     {
         mainCamera = Camera.main;
-        spriteRenderer = GetComponent<SpriteRenderer>();
-        initialLocalPosition = transform.localPosition;
+        // fallback in case Initialize is called late
+        if (initialLocalPosition == Vector3.zero) 
+            initialLocalPosition = transform.localPosition;
     }
 
     void Update()
     {
         if (mainCamera == null) return;
 
-        // カメラの方を常に向く（ビルボード）
+        // ビルボード（常にカメラを向く）
         transform.forward = mainCamera.transform.forward;
 
-        // 上下にフワフワさせるアニメーション
+        if (parentTransform != null)
+        {
+            // 親（木）のスケールが変化しても、アイコン自身のワールドサイズは一定に保つ
+            // これにより、木が縮んでもアイコンは小さくならない。
+            // さらに親の子要素であるため、木が縮むとアイコンのワールド高さは自動的に木の上端に追従する。
+            transform.localScale = new Vector3(
+                targetWorldSize / parentTransform.lossyScale.x,
+                targetWorldSize / parentTransform.lossyScale.y,
+                targetWorldSize / parentTransform.lossyScale.z
+            );
+        }
+
+        // 上下のフワフワアニメーション
         float newY = initialLocalPosition.y + Mathf.Sin(Time.time * bobbingSpeed) * bobbingAmount;
         transform.localPosition = new Vector3(initialLocalPosition.x, newY, initialLocalPosition.z);
     }
@@ -36,13 +93,20 @@ public class TaskMarker : MonoBehaviour
     /// </summary>
     public void SetVisible(bool isVisible)
     {
-        if (spriteRenderer != null)
+        var sr = GetComponent<SpriteRenderer>();
+        if (sr != null) sr.enabled = isVisible;
+
+        if (customIconObj != null)
         {
-            spriteRenderer.enabled = isVisible;
+            customIconObj.SetActive(isVisible);
         }
         else
         {
-            gameObject.SetActive(isVisible);
+            // fallback: direct children with renderers
+            foreach (Renderer r in GetComponentsInChildren<Renderer>())
+            {
+                r.enabled = isVisible;
+            }
         }
     }
 }

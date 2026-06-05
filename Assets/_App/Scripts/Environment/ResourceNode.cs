@@ -23,8 +23,18 @@ public class ResourceNode : MonoBehaviour
     [SerializeField] private float fallAngle = 85f;        // 倒れる角度
     [SerializeField] private float disappearDelay = 1.0f;  // 倒れた後に消えるまでの待機時間
 
+    [Header("Growth (Food)")]
+    [SerializeField] private float timeToRipe = 1080f;     // 未完熟から完熟になるまでの時間（1日=1080秒）
+    [SerializeField] private float initialGrowthScale = 0.1f; // 生え始めのスケール
+
     /// <summary>このノードの資源タイプ</summary>
     public ResourceType Type => resourceType;
+
+    /// <summary>完熟しているかどうか（Foodのみ）</summary>
+    public bool IsRipe { get; private set; }
+
+    private float growthTimer = 0f;
+    private bool isGrowing = false;
 
     /// <summary>残りの資源量</summary>
     public int CurrentAmount { get; private set; }
@@ -60,8 +70,21 @@ public class ResourceNode : MonoBehaviour
         originalScale = transform.localScale;
         originalRotation = transform.localRotation;
         
-        // タスクマーカーの初期化 (Instantiate直後に呼ばれるSetTaskMarkerに対応するためAwakeで実行)
+        // タスクマーカーの初期化
         InitializeTaskMarker();
+
+        // Foodの場合は成長処理を開始
+        if (resourceType == ResourceType.Food)
+        {
+            IsRipe = false;
+            isGrowing = true;
+            growthTimer = 0f;
+            transform.localScale = originalScale * initialGrowthScale;
+        }
+        else
+        {
+            IsRipe = true; // Food以外は最初から収穫可能とみなす（一応）
+        }
     }
 
     void Start()
@@ -72,6 +95,26 @@ public class ResourceNode : MonoBehaviour
         if (GetComponent<HoverHighlight>() == null)
         {
             gameObject.AddComponent<HoverHighlight>();
+        }
+    }
+
+    void Update()
+    {
+        if (isGrowing)
+        {
+            growthTimer += Time.deltaTime;
+            float progress = Mathf.Clamp01(growthTimer / timeToRipe);
+            
+            // サイズを徐々に大きくする
+            float currentScale = Mathf.Lerp(initialGrowthScale, 1f, progress);
+            transform.localScale = originalScale * currentScale;
+
+            if (progress >= 1f)
+            {
+                isGrowing = false;
+                IsRipe = true;
+                Debug.Log($"[ResourceNode] {gameObject.name} が完熟しました！");
+            }
         }
     }
 
@@ -104,27 +147,37 @@ public class ResourceNode : MonoBehaviour
                 }
             }
 
-            // 最上部から少し浮かせた位置に配置（0.5m上。スケール影響を考慮）
-            float scaleY = transform.lossyScale.y;
-            float localOffset = (scaleY > 0.01f) ? (0.5f / scaleY) : 0.5f;
+            // 最上部から少し浮かせた位置に配置（0.5m上）
+            // TaskMarker内でスケール補正を行うため、ローカル座標としての高さをそのまま渡す
+            float localOffset = 0.5f;
+            float markerLocalY = maxLocalY + localOffset;
             
-            markerObj.transform.localPosition = new Vector3(0, maxLocalY + localOffset, 0);
+            markerObj.transform.localPosition = new Vector3(0, markerLocalY, 0);
 
-            // スケールを均一に保つ（木が巨大・矮小でもアイコンの大きさは一定にする）
-            markerObj.transform.localScale = new Vector3(
-                1.0f / transform.lossyScale.x,
-                1.0f / transform.lossyScale.y,
-                1.0f / transform.lossyScale.z
-            ) * 1.5f; // 見やすいように少し大きめに設定
-
-            var sr = markerObj.AddComponent<SpriteRenderer>();
-            sr.sortingOrder = 10;
-            if (Zombi.UI.CursorManager.Instance != null && Zombi.UI.CursorManager.Instance.axeIconSprite != null)
+            // CursorManagerに設定されているカスタムAxeIconプレハブを取得（なければResourcesからフォールバック検索）
+            GameObject customPrefab = null;
+            if (Zombi.UI.CursorManager.Instance != null && Zombi.UI.CursorManager.Instance.axeIconPrefab != null)
             {
-                sr.sprite = Zombi.UI.CursorManager.Instance.axeIconSprite;
+                customPrefab = Zombi.UI.CursorManager.Instance.axeIconPrefab;
+            }
+            if (customPrefab == null)
+            {
+                customPrefab = Resources.Load<GameObject>("AxeIcon");
             }
 
             taskMarker = markerObj.AddComponent<TaskMarker>();
+            taskMarker.Initialize(transform, markerLocalY, 1.5f, customPrefab);
+
+            // プレハブがない場合は既存のSpriteRenderer方式でフォールバック
+            if (customPrefab == null)
+            {
+                var sr = markerObj.AddComponent<SpriteRenderer>();
+                sr.sortingOrder = 10;
+                if (Zombi.UI.CursorManager.Instance != null && Zombi.UI.CursorManager.Instance.axeIconSprite != null)
+                {
+                    sr.sprite = Zombi.UI.CursorManager.Instance.axeIconSprite;
+                }
+            }
         }
 
         // 初期状態は非表示
@@ -182,19 +235,27 @@ public class ResourceNode : MonoBehaviour
     }
 
     /// <summary>
-    /// 木以外の資源の採取処理: 従来通りスケール縮小 → 非アクティブ化
+    /// 木以外の資源の採取処理: スケール縮小ではなく、フェードアウトする
     /// </summary>
     private void HarvestNonTree()
     {
-        // 残量に応じてスケールを変化（視覚フィードバック）
         float ratio = (float)CurrentAmount / ActualYield;
-        float scaleFactor = Mathf.Lerp(depletedScale, 1f, ratio);
-        transform.localScale = originalScale * scaleFactor;
-
+        
+        // スケール変更はコライダーへの影響が大きいため廃止し、マテリアルのアルファ値変更などで表現するべきですが、
+        // ひとまずバグを避けるためにスケール縮小処理を削除します。
+        
         // 枯渇したらオブジェクトを非アクティブにする
         if (CurrentAmount <= 0)
         {
             Debug.Log($"[ResourceNode] {gameObject.name} has been depleted!");
+            
+            // 資源を地面にドロップする
+            if (ItemDropManager.Instance != null && GridManager.Instance != null)
+            {
+                Vector2Int dropPos = hasGridPos ? gridPos : GridManager.Instance.WorldToGrid(transform.position);
+                ItemDropManager.Instance.DropItem(dropPos, ActualYield, Type);
+            }
+
             UnregisterFromGrid();
             gameObject.SetActive(false);
         }
@@ -253,7 +314,7 @@ public class ResourceNode : MonoBehaviour
                 if (resourceType == ResourceType.Wood && ItemDropManager.Instance != null && GridManager.Instance != null)
                 {
                     Vector2Int dropPos = hasGridPos ? gridPos : GridManager.Instance.WorldToGrid(transform.position);
-                    ItemDropManager.Instance.DropWood(dropPos, ActualYield);
+                    ItemDropManager.Instance.DropItem(dropPos, ActualYield, ResourceType.Wood);
                 }
 
                 // 倒れた後、少し待ってから非アクティブにする

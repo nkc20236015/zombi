@@ -8,8 +8,9 @@ using UnityEngine;
 public class NPCToolHolder : MonoBehaviour
 {
     [Header("Tool Prefabs")]
-    [SerializeField] private GameObject axePrefab;     // Veresen axe
+    [SerializeField] private GameObject axePrefab;      // Veresen axe
     [SerializeField] private GameObject pickaxePrefab;  // Veresen pickaxe
+    [SerializeField] private GameObject hoePrefab;      // Veresen hoe
 
     [Header("Hold Settings")]
     [SerializeField] private Vector3 holdPositionOffset = new Vector3(0.05f, 0.05f, 0f);
@@ -32,6 +33,8 @@ public class NPCToolHolder : MonoBehaviour
             axePrefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Veresen/BasicTools/Prefabs/axe.prefab");
         if (pickaxePrefab == null)
             pickaxePrefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Veresen/BasicTools/Prefabs/pickaxe.prefab");
+        if (hoePrefab == null)
+            hoePrefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Tool/BasicTools/Prefabs/hoe.prefab");
 #endif
     }
 
@@ -63,18 +66,14 @@ public class NPCToolHolder : MonoBehaviour
     /// <summary>
     /// 指定したResourceTypeに応じたツールを手に表示する。
     /// TakeItemアニメーション中に呼ばれることを想定。
+    /// useTool が false の場合は素手（ツール非表示）になる。
     /// </summary>
-    public void ShowTool(ResourceType type)
+    public void ShowTool(ResourceType type, bool useTool = true)
     {
-        // 同じツールが既に表示されている場合はスキップ
-        if (currentTool != null && currentToolType == type)
-        {
-            currentTool.SetActive(true);
-            return;
-        }
-
         // 既存のツールを破棄
         HideTool();
+
+        if (!useTool) return;
 
         GameObject prefab = GetToolPrefab(type);
         if (prefab == null || toolHolder == null) return;
@@ -107,6 +106,8 @@ public class NPCToolHolder : MonoBehaviour
                 return axePrefab;
             case ResourceType.Stone:
                 return pickaxePrefab;
+            case ResourceType.Food:
+                return hoePrefab;
             default:
                 return null;
         }

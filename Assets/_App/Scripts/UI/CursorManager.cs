@@ -17,6 +17,9 @@ namespace Zombi.UI
         
         [Tooltip("伐採モード時の右上に表示するアイコン（斧など）")]
         public Sprite axeIconSprite;
+
+        [Tooltip("3D空間上の木の上に表示するAxeIconオブジェクト（ユーザー作成のプレハブをここにアサイン）")]
+        public GameObject axeIconPrefab;
         
         [Tooltip("キャンセルモード時の右上に表示するアイコン（赤いバツ印など）")]
         public Sprite cancelIconSprite;

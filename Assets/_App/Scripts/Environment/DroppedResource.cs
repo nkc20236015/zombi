@@ -25,10 +25,19 @@ public class DroppedResource : MonoBehaviour
 
     private void UpdateVisual()
     {
+        GameObject prefabToUse = null;
+
         if (Type == ResourceType.Wood)
         {
-            GameObject prefabToUse = ItemDropManager.Instance.GetWoodPrefabForAmount(Amount);
-            
+            prefabToUse = ItemDropManager.Instance.GetWoodPrefabForAmount(Amount);
+        }
+        else if (Type == ResourceType.Food)
+        {
+            prefabToUse = ItemDropManager.Instance.foodPrefab;
+        }
+
+        if (prefabToUse != null)
+        {
             // 既に同じプレハブのインスタンスがあるなら作り直さない
             if (currentVisual != null && currentVisual.name == prefabToUse.name)
             {
@@ -40,14 +49,11 @@ public class DroppedResource : MonoBehaviour
                 Destroy(currentVisual);
             }
 
-            if (prefabToUse != null)
-            {
-                currentVisual = Instantiate(prefabToUse, transform);
-                currentVisual.name = prefabToUse.name; // 識別用
+            currentVisual = Instantiate(prefabToUse, transform);
+            currentVisual.name = prefabToUse.name; // 識別用
 
-                // 1マスに収まるようにスケールを自動調整する
-                FitToGridCell(currentVisual);
-            }
+            // 1マスに収まるようにスケールを自動調整する
+            FitToGridCell(currentVisual);
         }
     }
 

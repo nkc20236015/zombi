@@ -40,5 +40,11 @@ public enum PlayerMode
     Cancelling,
     
     /// <summary>備蓄場作成モード（エリアボタン押下後）</summary>
-    StockpileZoning
+    StockpileZoning,
+    
+    /// <summary>キノコなどを切って収穫するモード（カマ・ナイフ）</summary>
+    Cutting,
+    
+    /// <summary>キノコなどを採取するモード（素手）</summary>
+    Picking
 }
