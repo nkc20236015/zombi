@@ -254,14 +254,7 @@ public class NPCController : MonoBehaviour
         {
             // 採取を1回実行
             int harvested = targetNode.Harvest();
-            if (harvested > 0 && ResourceManager.Instance != null)
-            {
-                // 木材は伐採完了時に地面にドロップするため、直接加算しない
-                if (targetNode.Type != ResourceType.Wood)
-                {
-                    ResourceManager.Instance.AddResource(targetNode.Type, harvested);
-                }
-            }
+            // 直接の加算処理を削除し、全て枯渇時のドロップ（ResourceNode.HarvestNonTree）に任せ、NPCが運搬するフローに一本化。
 
             // 再度タイマーリセットしてアニメーション再生
             if (targetNode != null && targetNode.HasResources)
@@ -388,8 +381,6 @@ public class NPCController : MonoBehaviour
     {
         if (animController == null) return;
 
-        // ResourceType に応じてアクションタイプを切り替え
-        // 0 = Chop（伐採）, 1 = Mine（採掘）, 2 = TakeItem（採取）
         int actionType = 0;
         if (targetNode != null)
         {
@@ -402,8 +393,15 @@ public class NPCController : MonoBehaviour
                     actionType = 1; // Mine
                     break;
                 case ResourceType.Food:
-                    actionType = targetNode.IsRipe ? 2 : 0; // 完熟なら採取(TakeItem), 未完熟なら切る(Chop)
-                    break;
+                    if (targetNode.IsRipe)
+                    {
+                        animController.PlayGather();
+                    }
+                    else
+                    {
+                        animController.PlaySickle(); // カマを使うアニメーション
+                    }
+                    return; // 専用トリガーを使ったのでここで終了
                 default:
                     actionType = 0;
                     break;

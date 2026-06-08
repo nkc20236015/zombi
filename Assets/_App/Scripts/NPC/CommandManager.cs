@@ -299,9 +299,10 @@ public class CommandManager : MonoBehaviour
         selectionAreaObject.transform.localScale = new Vector3(sizeX, 0.01f, sizeZ);
 
         // マテリアルと色の切り替え
-        selectionRenderer.material = (mode == PlayerMode.Gathering) ? gatherMaterial : cancelMaterial;
+        bool isGatherType = (mode == PlayerMode.Gathering || mode == PlayerMode.Cutting || mode == PlayerMode.Picking);
+        selectionRenderer.material = isGatherType ? gatherMaterial : cancelMaterial;
         
-        Color borderColor = (mode == PlayerMode.Gathering) ? new Color(0.3f, 1f, 0.3f, 1f) : new Color(1f, 0.3f, 0.3f, 1f);
+        Color borderColor = isGatherType ? new Color(0.3f, 1f, 0.3f, 1f) : new Color(1f, 0.3f, 0.3f, 1f);
         borderRenderer.startColor = borderColor;
         borderRenderer.endColor = borderColor;
 
@@ -469,6 +470,14 @@ public class CommandManager : MonoBehaviour
             yPos = VoxelWorld.Instance.GetSurfaceWorldY(centerX, centerZ) + 0.06f;
         }
 
+        // 資源（キノコなど）が範囲内にないかチェック
+        Vector3 checkCenter = new Vector3(centerX, yPos, centerZ);
+        Vector3 checkExtents = new Vector3(sizeX / 2f, 5f, sizeZ / 2f); // 高さの余裕を持たせる
+        if (Physics.CheckBox(checkCenter, checkExtents, Quaternion.identity, resourceLayer))
+        {
+            isValid = false;
+        }
+
         zoningPreviewObject.transform.position = new Vector3(centerX, yPos, centerZ);
         zoningPreviewObject.transform.localScale = new Vector3(sizeX, 0.01f, sizeZ);
 
@@ -514,6 +523,35 @@ public class CommandManager : MonoBehaviour
                     return;
                 }
             }
+        }
+
+        // 資源（キノコなど）の最終チェック
+        float cellSizeX = GridManager.Instance.CellSizeX;
+        float cellSizeZ = GridManager.Instance.CellSizeZ;
+        Vector3 origin = GridManager.Instance.GridOrigin;
+
+        float worldMinX = minX * cellSizeX + origin.x;
+        float worldMaxX = (maxX + 1) * cellSizeX + origin.x;
+        float worldMinZ = minZ * cellSizeZ + origin.z;
+        float worldMaxZ = (maxZ + 1) * cellSizeZ + origin.z;
+
+        float sizeX = worldMaxX - worldMinX;
+        float sizeZ = worldMaxZ - worldMinZ;
+        float centerX = worldMinX + sizeX / 2f;
+        float centerZ = worldMinZ + sizeZ / 2f;
+
+        float yPos = 0.06f;
+        if (VoxelWorld.Instance != null)
+        {
+            yPos = VoxelWorld.Instance.GetSurfaceWorldY(centerX, centerZ) + 0.06f;
+        }
+
+        Vector3 checkCenter = new Vector3(centerX, yPos, centerZ);
+        Vector3 checkExtents = new Vector3(sizeX / 2f, 5f, sizeZ / 2f);
+        if (Physics.CheckBox(checkCenter, checkExtents, Quaternion.identity, resourceLayer))
+        {
+            Debug.LogWarning("[CommandManager] キノコや資源があるため備蓄場を作成できません");
+            return;
         }
 
         Vector2Int gridMin = new Vector2Int(minX, minZ);

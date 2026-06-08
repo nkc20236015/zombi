@@ -14,6 +14,8 @@ public class NPCAnimationController : MonoBehaviour
     private readonly int velocityHash = Animator.StringToHash("Velocity");
     private readonly int actionTriggerHash = Animator.StringToHash("ActionTrigger");
     private readonly int actionTypeHash = Animator.StringToHash("ActionType"); // 0=chop, 1=mine
+    private readonly int gatherTriggerHash = Animator.StringToHash("GatherTrigger"); // 完熟キノコ等の採取専用トリガー
+    private readonly int sickleTriggerHash = Animator.StringToHash("SickleTrigger"); // 未完熟キノコ等の切る専用トリガー
 
     private bool isPerformingAction;
 
@@ -82,6 +84,24 @@ public class NPCAnimationController : MonoBehaviour
         isPerformingAction = true;
         animator.SetInteger(actionTypeHash, actionType);
         animator.SetTrigger(actionTriggerHash);
+    }
+
+    /// <summary>
+    /// Play gathering animation (e.g., picking up ripe mushrooms).
+    /// </summary>
+    public void PlayGather()
+    {
+        isPerformingAction = true;
+        animator.SetTrigger(gatherTriggerHash);
+    }
+
+    /// <summary>
+    /// Play sickle animation (e.g., cutting unripe mushrooms).
+    /// </summary>
+    public void PlaySickle()
+    {
+        isPerformingAction = true;
+        animator.SetTrigger(sickleTriggerHash);
     }
 
     /// <summary>

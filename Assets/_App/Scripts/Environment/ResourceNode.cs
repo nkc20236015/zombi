@@ -25,7 +25,7 @@ public class ResourceNode : MonoBehaviour
 
     [Header("Growth (Food)")]
     [SerializeField] private float timeToRipe = 1080f;     // 未完熟から完熟になるまでの時間（1日=1080秒）
-    [SerializeField] private float initialGrowthScale = 0.1f; // 生え始めのスケール
+    [SerializeField] private float initialGrowthScale = 0.4f; // 生え始めのスケール
 
     /// <summary>このノードの資源タイプ</summary>
     public ResourceType Type => resourceType;
@@ -73,13 +73,23 @@ public class ResourceNode : MonoBehaviour
         // タスクマーカーの初期化
         InitializeTaskMarker();
 
-        // Foodの場合は成長処理を開始
+        // Foodの場合は成長処理を開始（半分はデバッグ用に完熟状態）
         if (resourceType == ResourceType.Food)
         {
-            IsRipe = false;
-            isGrowing = true;
-            growthTimer = 0f;
-            transform.localScale = originalScale * initialGrowthScale;
+            if (Random.value > 0.5f)
+            {
+                IsRipe = true;
+                isGrowing = false;
+                growthTimer = timeToRipe;
+                transform.localScale = originalScale;
+            }
+            else
+            {
+                IsRipe = false;
+                isGrowing = true;
+                growthTimer = 0f;
+                transform.localScale = originalScale * initialGrowthScale;
+            }
         }
         else
         {
@@ -275,7 +285,9 @@ public class ResourceNode : MonoBehaviour
     /// </summary>
     public void OnStrikeHit()
     {
-        if (isFalling || resourceType != ResourceType.Wood) return;
+        if (isFalling) return;
+        // Stone（岩）以外は揺れるようにする（木とFood(キノコ)が揺れる）
+        if (resourceType == ResourceType.Stone) return;
 
         // 既存の揺れTweenを止めてから新しい揺れを開始（重複防止）
         transform.DOKill(complete: false);

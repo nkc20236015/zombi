@@ -27,6 +27,12 @@ namespace Zombi.UI
         [Tooltip("備蓄場作成モード時の右上に表示するアイコン")]
         public Sprite stockpileIconSprite;
 
+        [Tooltip("切るモード（未完熟キノコ）時の右上に表示するアイコン")]
+        public Sprite cuttingIconSprite;
+
+        [Tooltip("採取モード（完熟キノコ）時の右上に表示するアイコン")]
+        public Sprite pickingIconSprite;
+
         [Header("UI References (Auto-generated if left empty)")]
         [SerializeField] private RectTransform cursorRoot;
         [SerializeField] private Image mainCursorImage;
@@ -131,6 +137,16 @@ namespace Zombi.UI
             {
                 subIconImage.gameObject.SetActive(true);
                 subIconImage.sprite = axeIconSprite;
+            }
+            else if (mode == PlayerMode.Cutting)
+            {
+                subIconImage.gameObject.SetActive(true);
+                subIconImage.sprite = cuttingIconSprite != null ? cuttingIconSprite : axeIconSprite;
+            }
+            else if (mode == PlayerMode.Picking)
+            {
+                subIconImage.gameObject.SetActive(true);
+                subIconImage.sprite = pickingIconSprite != null ? pickingIconSprite : axeIconSprite;
             }
             else if (mode == PlayerMode.Cancelling)
             {
