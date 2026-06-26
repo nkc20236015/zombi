@@ -613,8 +613,8 @@ public class CommandManager : MonoBehaviour
             }
         }
 
-        // Terrain Trees
-        if (TerrainTreeInteractManager.Instance != null && VoxelWorld.Instance != null)
+        // Terrain Trees（Gatheringモードのみ対象。Cutting/Pickingモードでは木は対象外）
+        if (mode == PlayerMode.Gathering && TerrainTreeInteractManager.Instance != null && VoxelWorld.Instance != null)
         {
             List<int> treeIndices = TerrainTreeInteractManager.Instance.GetTreesInRect(minX, maxX, minZ, maxZ);
             // 配列の要素削除によるズレを防ぐため、降順にソートして処理する
@@ -687,8 +687,8 @@ public class CommandManager : MonoBehaviour
     /// </summary>
     private void HandleGatheringClick(PlayerMode mode)
     {
-        // 1. Terrain Tree の判定
-        if (TerrainTreeInteractManager.Instance != null && VoxelWorld.Instance != null)
+        // 1. Terrain Tree の判定（Gatheringモードのみ。Cutting/Pickingでは木は対象外）
+        if (mode == PlayerMode.Gathering && TerrainTreeInteractManager.Instance != null && VoxelWorld.Instance != null)
         {
             int treeIndex = TerrainTreeInteractManager.Instance.GetHoveredTreeIndex();
             if (treeIndex != -1)

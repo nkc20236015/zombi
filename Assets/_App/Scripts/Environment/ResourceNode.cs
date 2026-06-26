@@ -164,7 +164,7 @@ public class ResourceNode : MonoBehaviour
             // キノコ（Food）は背が低いのでアイコンが隠さないよう最低高さを保証
             if (resourceType == ResourceType.Food)
             {
-                markerLocalY = Mathf.Max(markerLocalY, 2.5f);
+                markerLocalY = Mathf.Max(markerLocalY, 3.5f);
             }
             
             markerObj.transform.localPosition = new Vector3(0, markerLocalY, 0);
