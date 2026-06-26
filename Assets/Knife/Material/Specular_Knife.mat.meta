@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 1b6ba429154ddc84aa387c06aa4e7697
+timeCreated: 1554670630
+licenseType: Store
+NativeFormatImporter:
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 143769
+  packageName: Knife
+  packageVersion: 1.0
+  assetPath: Assets/Knife/Material/Specular_Knife.mat
+  uploadId: 304547
