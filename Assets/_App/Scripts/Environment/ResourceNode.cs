@@ -157,22 +157,61 @@ public class ResourceNode : MonoBehaviour
                 }
             }
 
-            // 最上部から少し浮かせた位置に配置（0.5m上）
-            // TaskMarker内でスケール補正を行うため、ローカル座標としての高さをそのまま渡す
+            // 最上部から少し浮かせた位置に配置
             float localOffset = 0.5f;
             float markerLocalY = maxLocalY + localOffset;
+
+            // キノコ（Food）は背が低いのでアイコンが隠さないよう最低高さを保証
+            if (resourceType == ResourceType.Food)
+            {
+                markerLocalY = Mathf.Max(markerLocalY, 2.5f);
+            }
             
             markerObj.transform.localPosition = new Vector3(0, markerLocalY, 0);
 
-            // CursorManagerに設定されているカスタムAxeIconプレハブを取得（なければResourcesからフォールバック検索）
+            // リソースの種類に応じたアイコンプレハブを選択
             GameObject customPrefab = null;
-            if (Zombi.UI.CursorManager.Instance != null && Zombi.UI.CursorManager.Instance.axeIconPrefab != null)
+            if (resourceType == ResourceType.Food)
             {
-                customPrefab = Zombi.UI.CursorManager.Instance.axeIconPrefab;
+                // キノコ: 完熟 → farmIcon、未完熟 → kamaIcon
+                if (IsRipe)
+                {
+                    if (Zombi.UI.CursorManager.Instance != null && Zombi.UI.CursorManager.Instance.farmIconPrefab != null)
+                    {
+                        customPrefab = Zombi.UI.CursorManager.Instance.farmIconPrefab;
+                    }
+#if UNITY_EDITOR
+                    if (customPrefab == null)
+                    {
+                        customPrefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/_App/Prefabs/ICon/farmIcon.prefab");
+                    }
+#endif
+                }
+                else
+                {
+                    if (Zombi.UI.CursorManager.Instance != null && Zombi.UI.CursorManager.Instance.kamaIconPrefab != null)
+                    {
+                        customPrefab = Zombi.UI.CursorManager.Instance.kamaIconPrefab;
+                    }
+#if UNITY_EDITOR
+                    if (customPrefab == null)
+                    {
+                        customPrefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/_App/Prefabs/ICon/kamaIcon.prefab");
+                    }
+#endif
+                }
             }
-            if (customPrefab == null)
+            else
             {
-                customPrefab = Resources.Load<GameObject>("AxeIcon");
+                // 木・石: 従来の斧アイコン
+                if (Zombi.UI.CursorManager.Instance != null && Zombi.UI.CursorManager.Instance.axeIconPrefab != null)
+                {
+                    customPrefab = Zombi.UI.CursorManager.Instance.axeIconPrefab;
+                }
+                if (customPrefab == null)
+                {
+                    customPrefab = Resources.Load<GameObject>("AxeIcon");
+                }
             }
 
             taskMarker = markerObj.AddComponent<TaskMarker>();

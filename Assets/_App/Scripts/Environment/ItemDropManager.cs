@@ -202,4 +202,84 @@ public class ItemDropManager : MonoBehaviour
         }
         return false;
     }
+
+    /// <summary>
+    /// 備蓄場ゾーン内のセルにのみアイテムを配置する。
+    /// 実際に配置できた量を返す。ゾーン外には一切溢れない。
+    /// </summary>
+    public int DropItemInZone(StockpileZone zone, Vector2Int preferredCell, int amount, ResourceType type)
+    {
+        if (amount <= 0 || GridManager.Instance == null || zone == null) return 0;
+
+        int totalPlaced = 0;
+        int remainingAmount = amount;
+
+        // まず指定セルに置けるだけ置く
+        int placedInPreferred = PlaceInCell(preferredCell, remainingAmount, type);
+        totalPlaced += placedInPreferred;
+        remainingAmount -= placedInPreferred;
+
+        // まだ残っていれば、ゾーン内の他のセルを探す
+        if (remainingAmount > 0)
+        {
+            foreach (var cell in zone.Cells)
+            {
+                if (cell == preferredCell) continue; // 既に試した
+                if (remainingAmount <= 0) break;
+
+                int placed = PlaceInCell(cell, remainingAmount, type);
+                if (placed > 0)
+                {
+                    // このセルにも保管記録を付ける
+                    zone.StoreItem(cell, placed);
+                    totalPlaced += placed;
+                    remainingAmount -= placed;
+                }
+            }
+        }
+
+        return totalPlaced;
+    }
+
+    /// <summary>
+    /// 1セルにアイテムを配置する内部ヘルパー。配置できた量を返す。
+    /// </summary>
+    private int PlaceInCell(Vector2Int pos, int amount, ResourceType type)
+    {
+        if (amount <= 0 || !GridManager.Instance.IsValidPosition(pos)) return 0;
+
+        int placed = 0;
+
+        if (gridItems.TryGetValue(pos, out DroppedResource existingResource))
+        {
+            if (existingResource.Type == type)
+            {
+                int spaceLeft = maxWoodPerStack - existingResource.Amount;
+                if (spaceLeft > 0)
+                {
+                    placed = Mathf.Min(spaceLeft, amount);
+                    existingResource.AddAmount(placed);
+                }
+            }
+            // 異なるタイプのアイテムがある場合は配置不可
+        }
+        else
+        {
+            // 新規作成
+            Vector3 worldPos = GridManager.Instance.GridToWorld(pos);
+
+            GameObject dropObj = new GameObject($"Dropped_{type}_{pos.x}_{pos.y}");
+            dropObj.transform.position = worldPos;
+            dropObj.transform.parent = transform;
+
+            DroppedResource newResource = dropObj.AddComponent<DroppedResource>();
+
+            placed = Mathf.Min(maxWoodPerStack, amount);
+            newResource.Initialize(type, placed, pos);
+
+            gridItems[pos] = newResource;
+        }
+
+        return placed;
+    }
 }

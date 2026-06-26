@@ -275,6 +275,12 @@ public class NPCController : MonoBehaviour
     {
         if (!agent.enabled || !agent.isOnNavMesh) return;
 
+        // BoredIdle中に指示が来た場合は即座に中断
+        if (CurrentState == NPCState.Idle && animController != null && animController.IsPlayingBoredIdle())
+        {
+            animController.PlayIdle();
+        }
+
         // 採取中の場合 → ツールをしまってから移動する
         if (CurrentState == NPCState.Gathering)
         {
@@ -311,6 +317,12 @@ public class NPCController : MonoBehaviour
     {
         if (node == null || !node.HasResources) return;
         if (!agent.enabled || !agent.isOnNavMesh) return;
+
+        // BoredIdle中に指示が来た場合は即座に中断
+        if (CurrentState == NPCState.Idle && animController != null && animController.IsPlayingBoredIdle())
+        {
+            animController.PlayIdle();
+        }
 
         // 採取中の場合 → ツールをしまってから次の採取対象へ移動
         if (CurrentState == NPCState.Gathering)
@@ -707,6 +719,7 @@ public class NPCController : MonoBehaviour
 
     /// <summary>
     /// 備蓄場にアイテムを置く。
+    /// 備蓄場内に配置できた分のみResourceManagerに加算する。
     /// </summary>
     private void DeliverItem()
     {
@@ -716,24 +729,38 @@ public class NPCController : MonoBehaviour
             return;
         }
 
-        // 備蓄場にアイテムをドロップ
-        if (ItemDropManager.Instance != null && GridManager.Instance != null)
+        int actuallyStored = 0;
+
+        if (ItemDropManager.Instance != null && GridManager.Instance != null && carryTargetZone != null)
         {
-            ItemDropManager.Instance.DropItem(carryTargetCell, carryingAmount, carryingResourceType);
-            
-            // 備蓄場の保管量を更新
-            if (carryTargetZone != null)
+            // 備蓄場ゾーン内にのみ配置（ゾーン外には溢れない）
+            actuallyStored = ItemDropManager.Instance.DropItemInZone(
+                carryTargetZone, carryTargetCell, carryingAmount, carryingResourceType);
+
+            // 指定セルの保管量を更新
+            if (actuallyStored > 0)
             {
-                carryTargetZone.StoreItem(carryTargetCell, carryingAmount);
+                carryTargetZone.StoreItem(carryTargetCell, actuallyStored);
             }
         }
 
-        Debug.Log($"[NPCController] {gameObject.name}: {carryingResourceType} x{carryingAmount} を備蓄場に納品！");
-
-        // リソースマネージャーに加算
-        if (ResourceManager.Instance != null)
+        // 実際に備蓄場に置けた分だけリソースマネージャーに加算
+        if (actuallyStored > 0 && ResourceManager.Instance != null)
         {
-            ResourceManager.Instance.AddResource(carryingResourceType, carryingAmount);
+            ResourceManager.Instance.AddResource(carryingResourceType, actuallyStored);
+            Debug.Log($"[NPCController] {gameObject.name}: {carryingResourceType} x{actuallyStored} を備蓄場に納品！");
+        }
+
+        // 置ききれなかった分はその場にドロップ（ResourceManagerには加算しない）
+        int leftover = carryingAmount - actuallyStored;
+        if (leftover > 0)
+        {
+            Debug.LogWarning($"[NPCController] {gameObject.name}: 備蓄場に入りきらなかった {carryingResourceType} x{leftover} をその場に落とします");
+            if (ItemDropManager.Instance != null && GridManager.Instance != null)
+            {
+                Vector2Int dropPos = GridManager.Instance.WorldToGrid(transform.position);
+                ItemDropManager.Instance.DropItem(dropPos, leftover, carryingResourceType);
+            }
         }
 
         carryingAmount = 0;
@@ -776,10 +803,17 @@ public class NPCController : MonoBehaviour
             // Idleに入った時に徘徊タイマーをリセット
             wanderTimer = Random.Range(minWanderInterval, maxWanderInterval);
 
-            // たまに Bored Idle を再生する
             if (animController != null)
             {
-                if (Random.value < 0.3f) // 30%の確率
+                // BoredIdleはプレイヤーが完全に何も指示していない場合のみ発動
+                // タスクが残っている場合や運搬すべきアイテムがある場合は絶対に発動しない
+                bool hasPendingTasks = TaskManager.Instance != null && TaskManager.Instance.GatherTasks.Count > 0;
+                bool hasItemsToHaul = ItemDropManager.Instance != null 
+                    && StockpileManager.Instance != null 
+                    && ItemDropManager.Instance.HasAnyDroppedItems() 
+                    && StockpileManager.Instance.HasAnyAvailableSpace();
+
+                if (!hasPendingTasks && !hasItemsToHaul && Random.value < 0.3f)
                 {
                     animController.PlayBoredIdle();
                 }

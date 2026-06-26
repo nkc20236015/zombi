@@ -227,7 +227,7 @@ public class CommandManager : MonoBehaviour
         if (Input.GetMouseButtonDown(0))
         {
             Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
-            if (Physics.Raycast(ray, out RaycastHit hit, 200f, groundLayer))
+            if (Physics.Raycast(ray, out RaycastHit hit, 200f, groundLayer | resourceLayer))
             {
                 isMouseDown = true;
                 isDragging = false;
@@ -240,7 +240,7 @@ public class CommandManager : MonoBehaviour
         if (isMouseDown && Input.GetMouseButton(0))
         {
             Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
-            if (Physics.Raycast(ray, out RaycastHit hit, 200f, groundLayer))
+            if (Physics.Raycast(ray, out RaycastHit hit, 200f, groundLayer | resourceLayer))
             {
                 dragCurrentWorldPos = hit.point;
 

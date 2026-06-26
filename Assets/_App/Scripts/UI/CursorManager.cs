@@ -33,6 +33,13 @@ namespace Zombi.UI
         [Tooltip("採取モード（完熟キノコ）時の右上に表示するアイコン")]
         public Sprite pickingIconSprite;
 
+        [Header("3D Task Marker Prefabs")]
+        [Tooltip("採取（完熟キノコ）の3Dアイコンプレハブ")]
+        public GameObject farmIconPrefab;
+
+        [Tooltip("切る（未完熟キノコ）の3Dアイコンプレハブ")]
+        public GameObject kamaIconPrefab;
+
         [Header("UI References (Auto-generated if left empty)")]
         [SerializeField] private RectTransform cursorRoot;
         [SerializeField] private Image mainCursorImage;

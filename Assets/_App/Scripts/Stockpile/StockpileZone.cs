@@ -108,6 +108,16 @@ public class StockpileZone : MonoBehaviour
     }
 
     /// <summary>
+    /// 指定セルの残り容量を返す。ゾーン外なら0。
+    /// </summary>
+    public int GetRemainingSpace(Vector2Int cell)
+    {
+        if (!cells.Contains(cell)) return 0;
+        int stored = storedAmounts.ContainsKey(cell) ? storedAmounts[cell] : 0;
+        return Mathf.Max(0, MaxPerCell - stored);
+    }
+
+    /// <summary>
     /// 指定のグリッド座標がこのゾーン内に含まれているか
     /// </summary>
     public bool ContainsCell(Vector2Int gridPos)
