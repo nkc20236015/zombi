@@ -179,29 +179,25 @@ public class ResourceNode : MonoBehaviour
                 // キノコ: 完熟 → farmIcon、未完熟 → kamaIcon
                 if (IsRipe)
                 {
-                    if (Zombi.UI.CursorManager.Instance != null && Zombi.UI.CursorManager.Instance.farmIconPrefab != null)
+#if UNITY_EDITOR
+                    customPrefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/_App/Prefabs/ICon/farmIcon.prefab");
+#endif
+                    // エディタ外のフォールバック
+                    if (customPrefab == null && Zombi.UI.CursorManager.Instance != null)
                     {
                         customPrefab = Zombi.UI.CursorManager.Instance.farmIconPrefab;
                     }
-#if UNITY_EDITOR
-                    if (customPrefab == null)
-                    {
-                        customPrefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/_App/Prefabs/ICon/farmIcon.prefab");
-                    }
-#endif
                 }
                 else
                 {
-                    if (Zombi.UI.CursorManager.Instance != null && Zombi.UI.CursorManager.Instance.kamaIconPrefab != null)
+#if UNITY_EDITOR
+                    customPrefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/_App/Prefabs/ICon/kamaIcon.prefab");
+#endif
+                    // エディタ外のフォールバック
+                    if (customPrefab == null && Zombi.UI.CursorManager.Instance != null)
                     {
                         customPrefab = Zombi.UI.CursorManager.Instance.kamaIconPrefab;
                     }
-#if UNITY_EDITOR
-                    if (customPrefab == null)
-                    {
-                        customPrefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/_App/Prefabs/ICon/kamaIcon.prefab");
-                    }
-#endif
                 }
             }
             else
