@@ -165,16 +165,9 @@ public class ResourceNode : MonoBehaviour
             // キノコ（Food）は背が低いのでアイコンが隠さないよう最低高さを保証
             if (resourceType == ResourceType.Food)
             {
-                if (!IsRipe)
-                {
-                    // 未完熟キノコ(kamaIcon)のみ: 黒い丸ごとサイズを半分にし、位置を大きく上げる
-                    markerLocalY = Mathf.Max(markerLocalY, 8.0f);
-                    targetIconSize = 0.75f;
-                }
-                else
-                {
-                    markerLocalY = Mathf.Max(markerLocalY, 3.5f);
-                }
+                // 完熟(farmIcon)・未完熟(kamaIcon)ともに: 黒い丸ごとサイズを半分にし、位置を大きく上げる
+                markerLocalY = Mathf.Max(markerLocalY, 8.0f);
+                targetIconSize = 0.75f;
             }
             
             markerObj.transform.localPosition = new Vector3(0, markerLocalY, 0);
