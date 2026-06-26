@@ -160,11 +160,21 @@ public class ResourceNode : MonoBehaviour
             // 最上部から少し浮かせた位置に配置
             float localOffset = 0.5f;
             float markerLocalY = maxLocalY + localOffset;
+            float targetIconSize = 1.5f;
 
             // キノコ（Food）は背が低いのでアイコンが隠さないよう最低高さを保証
             if (resourceType == ResourceType.Food)
             {
-                markerLocalY = Mathf.Max(markerLocalY, 3.5f);
+                if (!IsRipe)
+                {
+                    // 未完熟キノコ(kamaIcon)のみ: 黒い丸ごとサイズを半分にし、位置を大きく上げる
+                    markerLocalY = Mathf.Max(markerLocalY, 8.0f);
+                    targetIconSize = 0.75f;
+                }
+                else
+                {
+                    markerLocalY = Mathf.Max(markerLocalY, 3.5f);
+                }
             }
             
             markerObj.transform.localPosition = new Vector3(0, markerLocalY, 0);
@@ -215,7 +225,7 @@ public class ResourceNode : MonoBehaviour
             }
 
             taskMarker = markerObj.AddComponent<TaskMarker>();
-            taskMarker.Initialize(transform, markerLocalY, 1.5f, customPrefab);
+            taskMarker.Initialize(transform, markerLocalY, targetIconSize, customPrefab);
 
             // プレハブがない場合は既存のSpriteRenderer方式でフォールバック
             if (customPrefab == null)
