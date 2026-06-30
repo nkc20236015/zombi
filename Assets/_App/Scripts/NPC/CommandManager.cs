@@ -606,7 +606,7 @@ public class CommandManager : MonoBehaviour
             // ワールドのX, Z座標で範囲内か判定
             if (pos.x >= minX && pos.x <= maxX && pos.z >= minZ && pos.z <= maxZ)
             {
-                if (TaskManager.Instance.RegisterGatherTask(node))
+                if (TaskManager.Instance.RegisterGatherTask(node, mode))
                 {
                     registeredCount++;
                 }
@@ -625,7 +625,7 @@ public class CommandManager : MonoBehaviour
                 if (go != null)
                 {
                     ResourceNode node = go.GetComponent<ResourceNode>();
-                    if (node != null && TaskManager.Instance.RegisterGatherTask(node))
+                    if (node != null && TaskManager.Instance.RegisterGatherTask(node, mode))
                     {
                         registeredCount++;
                     }
@@ -706,7 +706,7 @@ public class CommandManager : MonoBehaviour
 
                         if (isTarget)
                         {
-                            TaskManager.Instance?.RegisterGatherTask(tNode);
+                            TaskManager.Instance?.RegisterGatherTask(tNode, mode);
                             return;
                         }
                     }
@@ -728,7 +728,7 @@ public class CommandManager : MonoBehaviour
 
                 if (isTarget)
                 {
-                    TaskManager.Instance?.RegisterGatherTask(node);
+                    TaskManager.Instance?.RegisterGatherTask(node, mode);
                     return;
                 }
             }

@@ -173,38 +173,10 @@ public class ResourceNode : MonoBehaviour
             markerObj.transform.localPosition = new Vector3(0, markerLocalY, 0);
 
             // リソースの種類に応じたアイコンプレハブを選択
+            // ※ キノコ（Food）は指示の種類（採取/切る）によってアイコンが変わるため、
+            //    ここでは選択せず、SetTaskMarker() で動的にセットする
             GameObject customPrefab = null;
-            if (resourceType == ResourceType.Food)
-            {
-                // キノコ: 完熟 → farmIcon、未完熟 → kamaIcon
-                if (IsRipe)
-                {
-                    if (Zombi.UI.CursorManager.Instance != null && Zombi.UI.CursorManager.Instance.farmIconPrefab != null)
-                    {
-                        customPrefab = Zombi.UI.CursorManager.Instance.farmIconPrefab;
-                    }
-#if UNITY_EDITOR
-                    if (customPrefab == null)
-                    {
-                        customPrefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/_App/Prefabs/ICon/farmIcon.prefab");
-                    }
-#endif
-                }
-                else
-                {
-                    if (Zombi.UI.CursorManager.Instance != null && Zombi.UI.CursorManager.Instance.kamaIconPrefab != null)
-                    {
-                        customPrefab = Zombi.UI.CursorManager.Instance.kamaIconPrefab;
-                    }
-#if UNITY_EDITOR
-                    if (customPrefab == null)
-                    {
-                        customPrefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/_App/Prefabs/ICon/kamaIcon.prefab");
-                    }
-#endif
-                }
-            }
-            else
+            if (resourceType != ResourceType.Food)
             {
                 // 木・石: 従来の斧アイコン
                 if (Zombi.UI.CursorManager.Instance != null && Zombi.UI.CursorManager.Instance.axeIconPrefab != null)
@@ -220,8 +192,8 @@ public class ResourceNode : MonoBehaviour
             taskMarker = markerObj.AddComponent<TaskMarker>();
             taskMarker.Initialize(transform, markerLocalY, targetIconSize, customPrefab);
 
-            // プレハブがない場合は既存のSpriteRenderer方式でフォールバック
-            if (customPrefab == null)
+            // プレハブがない場合（木・石でプレハブ未設定）は既存のSpriteRenderer方式でフォールバック
+            if (customPrefab == null && resourceType != ResourceType.Food)
             {
                 var sr = markerObj.AddComponent<SpriteRenderer>();
                 sr.sortingOrder = 10;
@@ -236,12 +208,55 @@ public class ResourceNode : MonoBehaviour
         taskMarker.SetVisible(false);
     }
 
-    public void SetTaskMarker(bool active)
+    /// <summary>
+    /// タスクマーカーの表示ON/OFFを設定する。
+    /// キノコ（Food）の場合はモードに応じてアイコンを動的に差し替える。
+    /// </summary>
+    public void SetTaskMarker(bool active, PlayerMode mode = PlayerMode.Normal)
     {
-        if (taskMarker != null)
+        if (taskMarker == null) return;
+
+        // キノコの場合、表示ON時にモードに応じたアイコンをセット
+        if (active && resourceType == ResourceType.Food)
         {
-            taskMarker.SetVisible(active);
+            GameObject iconPrefab = null;
+
+            if (mode == PlayerMode.Picking)
+            {
+                // 採取 → farmIcon
+                if (Zombi.UI.CursorManager.Instance != null && Zombi.UI.CursorManager.Instance.farmIconPrefab != null)
+                {
+                    iconPrefab = Zombi.UI.CursorManager.Instance.farmIconPrefab;
+                }
+#if UNITY_EDITOR
+                if (iconPrefab == null)
+                {
+                    iconPrefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/_App/Prefabs/ICon/farmIcon.prefab");
+                }
+#endif
+            }
+            else if (mode == PlayerMode.Cutting)
+            {
+                // 切る → kamaIcon
+                if (Zombi.UI.CursorManager.Instance != null && Zombi.UI.CursorManager.Instance.kamaIconPrefab != null)
+                {
+                    iconPrefab = Zombi.UI.CursorManager.Instance.kamaIconPrefab;
+                }
+#if UNITY_EDITOR
+                if (iconPrefab == null)
+                {
+                    iconPrefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/_App/Prefabs/ICon/kamaIcon.prefab");
+                }
+#endif
+            }
+
+            if (iconPrefab != null)
+            {
+                taskMarker.SwapIcon(iconPrefab);
+            }
         }
+
+        taskMarker.SetVisible(active);
     }
 
 

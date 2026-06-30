@@ -36,8 +36,9 @@ public class TaskManager : MonoBehaviour
 
     /// <summary>
     /// 伐採タスクを登録する。既に同じノードのタスクがあれば無視。
+    /// modeを渡すことで、キノコの場合にモードに応じたアイコンを表示する。
     /// </summary>
-    public bool RegisterGatherTask(ResourceNode node)
+    public bool RegisterGatherTask(ResourceNode node, PlayerMode mode = PlayerMode.Normal)
     {
         if (node == null || !node.HasResources) return false;
 
@@ -57,8 +58,8 @@ public class TaskManager : MonoBehaviour
         };
 
         gatherTasks.Add(task);
-        node.SetTaskMarker(true);
-        Debug.Log($"[TaskManager] タスク登録: {node.gameObject.name} ({node.Type})");
+        node.SetTaskMarker(true, mode);
+        Debug.Log($"[TaskManager] タスク登録: {node.gameObject.name} ({node.Type}) mode={mode}");
         return true;
     }
 
