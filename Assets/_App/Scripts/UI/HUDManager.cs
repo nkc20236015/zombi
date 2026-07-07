@@ -422,6 +422,13 @@ public class HUDManager : MonoBehaviour
                     GameObject statObj = new GameObject("Stat_" + kvp.Key);
                     statObj.transform.SetParent(detailStatsContainer.transform, false);
                     TextMeshProUGUI statText = statObj.AddComponent<TextMeshProUGUI>();
+                    
+                    // 日本語フォント（GenEiKiwamiGo SDFなど）を引き継ぐ
+                    if (detailNameText != null)
+                    {
+                        statText.font = detailNameText.font;
+                    }
+                    
                     statText.fontSize = 12f;
                     statText.color = new Color(0.8f, 0.8f, 0.8f, 1f);
                     statText.text = $"• {kvp.Key}: <color=#FFFFFF>{kvp.Value}</color>";
