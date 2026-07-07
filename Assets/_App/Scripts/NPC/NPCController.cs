@@ -996,11 +996,16 @@ public class NPCController : MonoBehaviour, ISelectable
         switch (CurrentState)
         {
             case NPCState.Idle: return "待機中";
-            case NPCState.Wander: return "うろうろ";
+            case NPCState.Wandering: return "うろうろ";
             case NPCState.Moving: return "移動中";
+            case NPCState.MovingToResource: return "資源へ移動中";
             case NPCState.Gathering: return "資源採取中";
-            case NPCState.Hauling: return "アイテム運搬中";
-            case NPCState.PutAway: return "道具の片づけ中";
+            case NPCState.PuttingAway: return "道具の片づけ中";
+            case NPCState.Hauling: return "アイテム回収中";
+            case NPCState.Carrying: return "アイテム運搬中";
+            case NPCState.Working: return "作業中";
+            case NPCState.Guarding: return "警戒中";
+            case NPCState.Fighting: return "戦闘中";
             default: return CurrentState.ToString();
         }
     }
