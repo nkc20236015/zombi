@@ -50,16 +50,19 @@ public class HoverHighlight : MonoBehaviour
 
         for (int i = 0; i < renderers.Length; i++)
         {
-            var mats = renderers[i].materials;
+            var mats = renderers[i].sharedMaterials; // Use sharedMaterials to avoid instantiation
             originalColors[i] = new Color[mats.Length];
             for (int j = 0; j < mats.Length; j++)
             {
-                if (mats[j].HasProperty("_BaseColor"))
-                    originalColors[i][j] = mats[j].GetColor("_BaseColor");
-                else if (mats[j].HasProperty("_Color"))
-                    originalColors[i][j] = mats[j].GetColor("_Color");
-                else
-                    originalColors[i][j] = Color.white;
+                if (mats[j] != null)
+                {
+                    if (mats[j].HasProperty("_BaseColor"))
+                        originalColors[i][j] = mats[j].GetColor("_BaseColor");
+                    else if (mats[j].HasProperty("_Color"))
+                        originalColors[i][j] = mats[j].GetColor("_Color");
+                    else
+                        originalColors[i][j] = Color.white;
+                }
             }
         }
     }
@@ -108,11 +111,17 @@ public class HoverHighlight : MonoBehaviour
             strength = cancelTintStrength;
         }
 
+        MaterialPropertyBlock mpb = new MaterialPropertyBlock();
+
         for (int i = 0; i < renderers.Length; i++)
         {
-            var mats = renderers[i].materials;
+            var mats = renderers[i].sharedMaterials;
+            renderers[i].GetPropertyBlock(mpb);
+
             for (int j = 0; j < mats.Length; j++)
             {
+                if (mats[j] == null) continue;
+
                 Color target;
                 if (enable)
                 {
@@ -124,10 +133,12 @@ public class HoverHighlight : MonoBehaviour
                 }
 
                 if (mats[j].HasProperty("_BaseColor"))
-                    mats[j].SetColor("_BaseColor", target);
+                    mpb.SetColor("_BaseColor", target);
                 else if (mats[j].HasProperty("_Color"))
-                    mats[j].SetColor("_Color", target);
+                    mpb.SetColor("_Color", target);
             }
+            
+            renderers[i].SetPropertyBlock(mpb);
         }
     }
 

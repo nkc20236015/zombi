@@ -46,9 +46,12 @@ public class HUDManager : MonoBehaviour
 
     private void Start()
     {
-        // 既存のボタンの親（タスクパネル）をキャッシュ
-        if (axeButton != null) taskPanelObject = axeButton.transform.parent.gameObject;
-        else if (cancelButton != null) taskPanelObject = cancelButton.transform.parent.gameObject;
+        // 既存のボタンの親（タスクパネルなど）を自動収集して、非表示リストに追加する（重複防止）
+        AddParentToHideList(axeButton);
+        AddParentToHideList(cancelButton);
+        AddParentToHideList(stockpileButton);
+        AddParentToHideList(kamaButton);
+        AddParentToHideList(farmButton);
 
         // 詳細情報パネルを動的に生成
         CreateDetailPanel();
