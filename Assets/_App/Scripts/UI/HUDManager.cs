@@ -105,6 +105,18 @@ public class HUDManager : MonoBehaviour
         }
     }
 
+    private void AddParentToHideList(Button btn)
+    {
+        if (btn != null && btn.transform.parent != null)
+        {
+            GameObject parentObj = btn.transform.parent.gameObject;
+            if (!uiElementsToHide.Contains(parentObj))
+            {
+                uiElementsToHide.Add(parentObj);
+            }
+        }
+    }
+
     private void OnDestroy()
     {
         if (SelectionManager.Instance != null)
