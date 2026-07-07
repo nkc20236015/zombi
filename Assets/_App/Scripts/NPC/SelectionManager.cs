@@ -35,8 +35,10 @@ public class SelectionManager : MonoBehaviour
             (GameManager.Instance.CurrentPlayerMode == PlayerMode.Building ||
              GameManager.Instance.CurrentPlayerMode == PlayerMode.Gathering ||
              GameManager.Instance.CurrentPlayerMode == PlayerMode.Cancelling ||
-             GameManager.Instance.CurrentPlayerMode == PlayerMode.StockpileZoning))
-            return; // 建築・伐採・キャンセル・ゾーニングモード中は選択無効
+             GameManager.Instance.CurrentPlayerMode == PlayerMode.StockpileZoning ||
+             GameManager.Instance.CurrentPlayerMode == PlayerMode.Cutting ||
+             GameManager.Instance.CurrentPlayerMode == PlayerMode.Picking))
+            return; // 建築・伐採・キャンセル・ゾーニング・切る・採取モード中は選択無効
 
         if (Input.GetMouseButtonDown(0))
         {

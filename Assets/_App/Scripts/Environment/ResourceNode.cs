@@ -1,5 +1,6 @@
 using UnityEngine;
 using DG.Tweening;
+using System.Collections.Generic;
 
 /// <summary>
 /// マップ上の採取可能なオブジェクト（木・岩など）にアタッチするスクリプト。

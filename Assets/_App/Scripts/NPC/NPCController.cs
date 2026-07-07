@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.AI;
+using System.Collections.Generic;
 
 [RequireComponent(typeof(NavMeshAgent))]
 public class NPCController : MonoBehaviour, ISelectable
