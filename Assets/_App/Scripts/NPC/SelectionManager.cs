@@ -57,6 +57,24 @@ public class SelectionManager : MonoBehaviour
         if (Physics.Raycast(ray, out RaycastHit hit, 200f))
         {
             ISelectable selectable = hit.collider.GetComponentInParent<ISelectable>();
+            
+            // ISelectableが見つからず、ヒットしたのがTerrainだった場合は、直近の木(TerrainTree)を探す
+            if (selectable == null && hit.collider.GetComponent<Terrain>() != null)
+            {
+                if (TerrainTreeInteractManager.Instance != null && VoxelWorld.Instance != null)
+                {
+                    int treeIndex = TerrainTreeInteractManager.Instance.FindClosestTreeIndexScreenSpace(Input.mousePosition, hit.point, 2f, 50f);
+                    if (treeIndex >= 0)
+                    {
+                        GameObject treeGo = VoxelWorld.Instance.ConvertTerrainTreeToGameObject(treeIndex);
+                        if (treeGo != null)
+                        {
+                            selectable = treeGo.GetComponent<ISelectable>();
+                        }
+                    }
+                }
+            }
+
             if (selectable != null)
             {
                 // 選択対象がNPCControllerの場合

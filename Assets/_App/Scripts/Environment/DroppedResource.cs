@@ -1,7 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 
-public class DroppedResource : MonoBehaviour
+public class DroppedResource : MonoBehaviour, ISelectable
 {
     public ResourceType Type { get; private set; }
     public int Amount { get; private set; }
@@ -89,6 +89,51 @@ public class DroppedResource : MonoBehaviour
         if (scale < 1f)
         {
             visualObj.transform.localScale = new Vector3(scale, scale, scale);
+        }
+
+        UpdateCollider(bounds);
+    }
+
+    private void UpdateCollider(Bounds visualBounds)
+    {
+        BoxCollider col = GetComponent<BoxCollider>();
+        if (col == null)
+        {
+            col = gameObject.AddComponent<BoxCollider>();
+        }
+        // ローカル座標系でコライダーのサイズを合わせる
+        col.center = currentVisual.transform.localPosition + new Vector3(0, visualBounds.size.y / 2f, 0);
+        col.size = new Vector3(GridManager.Instance.CellSizeX * 0.8f, visualBounds.size.y, GridManager.Instance.CellSizeZ * 0.8f);
+    }
+
+    // ==================== ISelectable Implementation ====================
+
+    public string GetSelectionName()
+    {
+        return $"アイテム ({GetResourceTypeJapanese()})";
+    }
+
+    public string GetSelectionDescription()
+    {
+        return "地面に落ちているアイテムです。NPCが備蓄場に運んでくれます。";
+    }
+
+    public Dictionary<string, string> GetSelectionStats()
+    {
+        var stats = new Dictionary<string, string>();
+        stats.Add("種類", GetResourceTypeJapanese());
+        stats.Add("数量", Amount.ToString());
+        return stats;
+    }
+
+    private string GetResourceTypeJapanese()
+    {
+        switch (Type)
+        {
+            case ResourceType.Wood: return "木材";
+            case ResourceType.Stone: return "石材";
+            case ResourceType.Food: return "食料";
+            default: return Type.ToString();
         }
     }
 }

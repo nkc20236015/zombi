@@ -26,6 +26,12 @@ public class HUDManager : MonoBehaviour
     [SerializeField] private Button kamaButton;     // kamaImage に付いている Button
     [SerializeField] private Button farmButton;     // farmImage に付いている Button
 
+    [Header("Detail Panel Settings")]
+    [Tooltip("詳細パネルのプレハブ。未設定の場合は自動生成されます。")]
+    [SerializeField] private GameObject detailPanelPrefab;
+    [Tooltip("詳細パネル表示時に非表示にしたいUIオブジェクトのリスト（トップバーやボタンなど）")]
+    [SerializeField] private List<GameObject> uiElementsToHide = new List<GameObject>();
+
     // 詳細情報パネル関連のメンバ変数
     private GameObject taskPanelObject;
     private GameObject detailPanelObj;
@@ -304,23 +310,40 @@ public class HUDManager : MonoBehaviour
             return;
         }
 
+        // プレハブが設定されている場合はそれを使う
+        if (detailPanelPrefab != null)
+        {
+            detailPanelObj = Instantiate(detailPanelPrefab, canvas.transform, false);
+            
+            // プレハブ内の要素を取得
+            Transform nameTr = detailPanelObj.transform.Find("NameText");
+            if (nameTr != null) detailNameText = nameTr.GetComponent<TextMeshProUGUI>();
+            
+            Transform descTr = detailPanelObj.transform.Find("DescText");
+            if (descTr != null) detailDescText = descTr.GetComponent<TextMeshProUGUI>();
+            
+            Transform statsTr = detailPanelObj.transform.Find("StatsContainer");
+            if (statsTr != null) detailStatsContainer = statsTr.gameObject;
+            
+            detailPanelObj.SetActive(false);
+            return;
+        }
+
+        // プレハブ未設定時: 動的に生成 (フォールバック)
         // 1. DetailPanel の作成
         detailPanelObj = new GameObject("DetailPanel");
         detailPanelObj.transform.SetParent(canvas.transform, false);
 
         RectTransform rtPanel = detailPanelObj.AddComponent<RectTransform>();
-        // 右下に配置 (Anchor: Bottom Right)
         rtPanel.anchorMin = new Vector2(1f, 0f);
         rtPanel.anchorMax = new Vector2(1f, 0f);
         rtPanel.pivot = new Vector2(1f, 0f);
-        rtPanel.anchoredPosition = new Vector2(-20f, 20f); // 画面端から少し離す
+        rtPanel.anchoredPosition = new Vector2(-20f, 20f);
         rtPanel.sizeDelta = new Vector2(300f, 220f);
 
-        // 背景画像 (半透明の黒)
         Image bgImage = detailPanelObj.AddComponent<Image>();
-        bgImage.color = new Color(0.1f, 0.1f, 0.15f, 0.9f); // Sleek dark mode
+        bgImage.color = new Color(0.1f, 0.1f, 0.15f, 0.9f);
 
-        // レイアウトグループ設定
         VerticalLayoutGroup layout = detailPanelObj.AddComponent<VerticalLayoutGroup>();
         layout.padding = new RectOffset(15, 15, 15, 15);
         layout.spacing = 8f;
@@ -330,15 +353,13 @@ public class HUDManager : MonoBehaviour
         layout.childForceExpandHeight = false;
         layout.childForceExpandWidth = true;
 
-        // 2. NameText (オブジェクト名)
         GameObject nameObj = new GameObject("NameText");
         nameObj.transform.SetParent(detailPanelObj.transform, false);
         detailNameText = nameObj.AddComponent<TextMeshProUGUI>();
         detailNameText.fontSize = 18f;
         detailNameText.fontStyle = FontStyles.Bold;
-        detailNameText.color = new Color(1f, 0.85f, 0.4f, 1f); // ゴールド
+        detailNameText.color = new Color(1f, 0.85f, 0.4f, 1f);
 
-        // 3. Divider (仕切り線)
         GameObject divider = new GameObject("Divider");
         divider.transform.SetParent(detailPanelObj.transform, false);
         Image divImg = divider.AddComponent<Image>();
@@ -346,7 +367,6 @@ public class HUDManager : MonoBehaviour
         RectTransform rtDiv = divider.GetComponent<RectTransform>();
         rtDiv.sizeDelta = new Vector2(0f, 2f);
 
-        // 4. DescText (説明文)
         GameObject descObj = new GameObject("DescText");
         descObj.transform.SetParent(detailPanelObj.transform, false);
         detailDescText = descObj.AddComponent<TextMeshProUGUI>();
@@ -354,7 +374,6 @@ public class HUDManager : MonoBehaviour
         detailDescText.color = Color.white;
         detailDescText.enableWordWrapping = true;
 
-        // 5. StatsContainer (パラメータ一覧)
         detailStatsContainer = new GameObject("StatsContainer");
         detailStatsContainer.transform.SetParent(detailPanelObj.transform, false);
         VerticalLayoutGroup statsLayout = detailStatsContainer.AddComponent<VerticalLayoutGroup>();
@@ -364,7 +383,6 @@ public class HUDManager : MonoBehaviour
         statsLayout.childForceExpandHeight = false;
         statsLayout.childForceExpandWidth = true;
 
-        // 初期状態は非アクティブ
         detailPanelObj.SetActive(false);
     }
 
@@ -372,20 +390,17 @@ public class HUDManager : MonoBehaviour
     {
         if (selectable != null)
         {
-            // パネルの情報を更新
-            detailNameText.text = selectable.GetSelectionName();
-            detailDescText.text = selectable.GetSelectionDescription();
+            if (detailNameText != null) detailNameText.text = selectable.GetSelectionName();
+            if (detailDescText != null) detailDescText.text = selectable.GetSelectionDescription();
 
-            // 既存のパラメータテキストをクリア
             foreach (var txt in activeStatTexts)
             {
                 if (txt != null) Destroy(txt.gameObject);
             }
             activeStatTexts.Clear();
 
-            // パラメータを動的生成
             var stats = selectable.GetSelectionStats();
-            if (stats != null)
+            if (stats != null && detailStatsContainer != null)
             {
                 foreach (var kvp in stats)
                 {
@@ -399,24 +414,31 @@ public class HUDManager : MonoBehaviour
                 }
             }
 
-            // タスクパネル（ボタン群）を非表示
+            // 指定されたUI要素をすべて非表示
+            foreach (var ui in uiElementsToHide)
+            {
+                if (ui != null) ui.SetActive(false);
+            }
+            
+            // 旧来のタスクパネルも念のため非表示
             if (taskPanelObject != null)
             {
                 taskPanelObject.SetActive(false);
             }
 
-            // 詳細パネルを表示
-            detailPanelObj.SetActive(true);
+            if (detailPanelObj != null) detailPanelObj.SetActive(true);
         }
         else
         {
-            // 詳細パネルを非表示
-            if (detailPanelObj != null)
+            if (detailPanelObj != null) detailPanelObj.SetActive(false);
+
+            // 指定されたUI要素を再表示
+            foreach (var ui in uiElementsToHide)
             {
-                detailPanelObj.SetActive(false);
+                if (ui != null) ui.SetActive(true);
             }
 
-            // タスクパネル（ボタン群）を再表示
+            // 旧来のタスクパネルも再表示
             if (taskPanelObject != null)
             {
                 taskPanelObject.SetActive(true);
