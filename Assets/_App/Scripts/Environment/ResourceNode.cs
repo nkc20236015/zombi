@@ -5,7 +5,7 @@ using DG.Tweening;
 /// マップ上の採取可能なオブジェクト（木・岩など）にアタッチするスクリプト。
 /// 資源の種類・残量を管理し、NPCがアクセスして採取できるようにする。
 /// </summary>
-public class ResourceNode : MonoBehaviour
+public class ResourceNode : MonoBehaviour, ISelectable
 {
     [Header("Resource Settings")]
     [SerializeField] private ResourceType resourceType = ResourceType.Wood;
@@ -403,5 +403,52 @@ public class ResourceNode : MonoBehaviour
     {
         Vector3 direction = (npcPosition - transform.position).normalized;
         return transform.position + direction * InteractionRange;
+    }
+
+    // ==================== ISelectable Implementation ====================
+
+    public string GetSelectionName()
+    {
+        switch (resourceType)
+        {
+            case ResourceType.Wood: return "木";
+            case ResourceType.Stone: return "岩";
+            case ResourceType.Food: return IsRipe ? "キノコ（完熟）" : "キノコ（未完熟）";
+            default: return gameObject.name;
+        }
+    }
+
+    public string GetSelectionDescription()
+    {
+        switch (resourceType)
+        {
+            case ResourceType.Wood: return "NPCに伐採指示を出して、木材を入手できます。";
+            case ResourceType.Stone: return "NPCに採掘指示を出して、石材を入手できます。";
+            case ResourceType.Food: return IsRipe ? "採取指示を出して、食料を収穫できます。" : "成長中のキノコです。カマで刈り取ることができます。";
+            default: return "採取可能な資源オブジェクトです。";
+        }
+    }
+
+    public Dictionary<string, string> GetSelectionStats()
+    {
+        var stats = new Dictionary<string, string>();
+        stats.Add("資源タイプ", GetResourceTypeJapanese());
+        stats.Add("残り資源量", $"{CurrentAmount} / {ActualYield}");
+        if (resourceType == ResourceType.Food)
+        {
+            stats.Add("成長状態", IsRipe ? "完熟" : "成長中");
+        }
+        return stats;
+    }
+
+    private string GetResourceTypeJapanese()
+    {
+        switch (resourceType)
+        {
+            case ResourceType.Wood: return "木材";
+            case ResourceType.Stone: return "石材";
+            case ResourceType.Food: return "食料";
+            default: return resourceType.ToString();
+        }
     }
 }

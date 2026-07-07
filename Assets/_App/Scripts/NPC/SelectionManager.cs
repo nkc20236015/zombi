@@ -11,6 +11,13 @@ public class SelectionManager : MonoBehaviour
     private List<NPCController> selectedNPCs = new List<NPCController>();
     public IReadOnlyList<NPCController> SelectedNPCs => selectedNPCs;
 
+    // --- 追加: 詳細情報用の汎用選択オブジェクト ---
+    public ISelectable CurrentSelected { get; private set; }
+
+    public delegate void SelectionChangedHandler(ISelectable newSelection);
+    public event SelectionChangedHandler OnSelectionChanged;
+    // ---------------------------------------------
+
     void Awake()
     {
         if (Instance != null && Instance != this) { Destroy(gameObject); return; }
@@ -43,28 +50,41 @@ public class SelectionManager : MonoBehaviour
     private void HandleSelection()
     {
         Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
-        if (Physics.Raycast(ray, out RaycastHit hit, 200f, npcLayer))
+        
+        // 全てのレイヤーを対象にレイキャストを行い、ISelectableを探す
+        if (Physics.Raycast(ray, out RaycastHit hit, 200f))
         {
-            NPCController npc = hit.collider.GetComponentInParent<NPCController>();
-            if (npc != null)
+            ISelectable selectable = hit.collider.GetComponentInParent<ISelectable>();
+            if (selectable != null)
             {
-                if (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift))
+                // 選択対象がNPCControllerの場合
+                if (selectable is NPCController npc)
                 {
-                    // 追加選択 / 解除
-                    if (selectedNPCs.Contains(npc))
+                    if (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift))
                     {
-                        Deselect(npc);
+                        // 追加選択 / 解除
+                        if (selectedNPCs.Contains(npc))
+                        {
+                            Deselect(npc);
+                        }
+                        else
+                        {
+                            Select(npc);
+                        }
                     }
                     else
                     {
+                        // 単体選択
+                        DeselectAllExcept(npc);
                         Select(npc);
                     }
                 }
                 else
                 {
-                    // 単体選択
-                    DeselectAll();
-                    Select(npc);
+                    // NPC以外のISelectable（ResourceNodeなど）をクリックした場合
+                    // 既存のNPC選択は解除
+                    DeselectAllNPCs();
+                    SetCurrentSelected(selectable);
                 }
                 return;
             }
@@ -73,7 +93,17 @@ public class SelectionManager : MonoBehaviour
         // 何もないところをクリックしたら選択解除
         if (!Input.GetKey(KeyCode.LeftShift) && !Input.GetKey(KeyCode.RightShift))
         {
-            DeselectAll();
+            DeselectAllNPCs();
+            SetCurrentSelected(null);
+        }
+    }
+
+    private void SetCurrentSelected(ISelectable newSelection)
+    {
+        if (CurrentSelected != newSelection)
+        {
+            CurrentSelected = newSelection;
+            OnSelectionChanged?.Invoke(CurrentSelected);
         }
     }
 
@@ -83,6 +113,7 @@ public class SelectionManager : MonoBehaviour
         {
             selectedNPCs.Add(npc);
             npc.SetSelected(true);
+            SetCurrentSelected(npc); // 最後に選択したNPCを詳細対象にする
         }
     }
 
@@ -92,15 +123,43 @@ public class SelectionManager : MonoBehaviour
         {
             selectedNPCs.Remove(npc);
             npc.SetSelected(false);
+            
+            // 現在の詳細選択オブジェクトが解除されたNPCだった場合、他の選択中NPCがあればそれに切り替える
+            if (CurrentSelected == npc)
+            {
+                if (selectedNPCs.Count > 0)
+                    SetCurrentSelected(selectedNPCs[selectedNPCs.Count - 1]);
+                else
+                    SetCurrentSelected(null);
+            }
         }
     }
 
     public void DeselectAll()
+    {
+        DeselectAllNPCs();
+        SetCurrentSelected(null);
+    }
+
+    private void DeselectAllNPCs()
     {
         foreach (var npc in selectedNPCs)
         {
             if (npc != null) npc.SetSelected(false);
         }
         selectedNPCs.Clear();
+    }
+
+    private void DeselectAllExcept(NPCController keepNpc)
+    {
+        // keepNpc以外のNPCの選択を解除する
+        for (int i = selectedNPCs.Count - 1; i >= 0; i--)
+        {
+            NPCController npc = selectedNPCs[i];
+            if (npc != keepNpc)
+            {
+                Deselect(npc);
+            }
+        }
     }
 }

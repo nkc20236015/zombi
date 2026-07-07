@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using DG.Tweening;
+using System.Collections.Generic;
 
 /// <summary>
 /// 画面のHUD（ヘッドアップディスプレイ）を管理するクラス。
@@ -25,12 +26,27 @@ public class HUDManager : MonoBehaviour
     [SerializeField] private Button kamaButton;     // kamaImage に付いている Button
     [SerializeField] private Button farmButton;     // farmImage に付いている Button
 
+    // 詳細情報パネル関連のメンバ変数
+    private GameObject taskPanelObject;
+    private GameObject detailPanelObj;
+    private TextMeshProUGUI detailNameText;
+    private TextMeshProUGUI detailDescText;
+    private GameObject detailStatsContainer;
+    private List<TextMeshProUGUI> activeStatTexts = new List<TextMeshProUGUI>();
+
     // ハイライト用の色
     private Color normalButtonColor = Color.white;
     private Color activeButtonColor = new Color(1f, 0.85f, 0.4f, 1f); // 黄金色ハイライト
 
     private void Start()
     {
+        // 既存のボタンの親（タスクパネル）をキャッシュ
+        if (axeButton != null) taskPanelObject = axeButton.transform.parent.gameObject;
+        else if (cancelButton != null) taskPanelObject = cancelButton.transform.parent.gameObject;
+
+        // 詳細情報パネルを動的に生成
+        CreateDetailPanel();
+
         if (GameManager.Instance != null)
         {
             // GameManagerのイベントに登録
@@ -41,6 +57,12 @@ public class HUDManager : MonoBehaviour
             // 初期状態の反映
             UpdateDayUI(GameManager.Instance.CurrentDay);
             UpdatePhaseUI(GameManager.Instance.CurrentGameState);
+        }
+
+        // SelectionManagerのイベントに登録
+        if (SelectionManager.Instance != null)
+        {
+            SelectionManager.Instance.OnSelectionChanged += OnSelectionChanged;
         }
 
         // ResourceManagerのイベントに登録
@@ -76,6 +98,11 @@ public class HUDManager : MonoBehaviour
 
     private void OnDestroy()
     {
+        if (SelectionManager.Instance != null)
+        {
+            SelectionManager.Instance.OnSelectionChanged -= OnSelectionChanged;
+        }
+
         if (GameManager.Instance != null)
         {
             GameManager.Instance.OnGameStateChanged -= UpdatePhaseUI;
@@ -264,5 +291,136 @@ public class HUDManager : MonoBehaviour
         if (stockpileButton != null) stockpileButton.GetComponent<Image>().color = (mode == PlayerMode.StockpileZoning) ? activeButtonColor : normalButtonColor;
         if (kamaButton != null) kamaButton.GetComponent<Image>().color = (mode == PlayerMode.Cutting) ? activeButtonColor : normalButtonColor;
         if (farmButton != null) farmButton.GetComponent<Image>().color = (mode == PlayerMode.Picking) ? activeButtonColor : normalButtonColor;
+    }
+
+    // ==================== Detail Panel UI ====================
+
+    private void CreateDetailPanel()
+    {
+        Canvas canvas = GetComponentInParent<Canvas>();
+        if (canvas == null)
+        {
+            Debug.LogError("[HUDManager] Canvas が見つからないため詳細パネルを生成できません");
+            return;
+        }
+
+        // 1. DetailPanel の作成
+        detailPanelObj = new GameObject("DetailPanel");
+        detailPanelObj.transform.SetParent(canvas.transform, false);
+
+        RectTransform rtPanel = detailPanelObj.AddComponent<RectTransform>();
+        // 右下に配置 (Anchor: Bottom Right)
+        rtPanel.anchorMin = new Vector2(1f, 0f);
+        rtPanel.anchorMax = new Vector2(1f, 0f);
+        rtPanel.pivot = new Vector2(1f, 0f);
+        rtPanel.anchoredPosition = new Vector2(-20f, 20f); // 画面端から少し離す
+        rtPanel.sizeDelta = new Vector2(300f, 220f);
+
+        // 背景画像 (半透明の黒)
+        Image bgImage = detailPanelObj.AddComponent<Image>();
+        bgImage.color = new Color(0.1f, 0.1f, 0.15f, 0.9f); // Sleek dark mode
+
+        // レイアウトグループ設定
+        VerticalLayoutGroup layout = detailPanelObj.AddComponent<VerticalLayoutGroup>();
+        layout.padding = new RectOffset(15, 15, 15, 15);
+        layout.spacing = 8f;
+        layout.childAlignment = TextAnchor.UpperLeft;
+        layout.childControlHeight = true;
+        layout.childControlWidth = true;
+        layout.childForceExpandHeight = false;
+        layout.childForceExpandWidth = true;
+
+        // 2. NameText (オブジェクト名)
+        GameObject nameObj = new GameObject("NameText");
+        nameObj.transform.SetParent(detailPanelObj.transform, false);
+        detailNameText = nameObj.AddComponent<TextMeshProUGUI>();
+        detailNameText.fontSize = 18f;
+        detailNameText.fontStyle = FontStyles.Bold;
+        detailNameText.color = new Color(1f, 0.85f, 0.4f, 1f); // ゴールド
+
+        // 3. Divider (仕切り線)
+        GameObject divider = new GameObject("Divider");
+        divider.transform.SetParent(detailPanelObj.transform, false);
+        Image divImg = divider.AddComponent<Image>();
+        divImg.color = new Color(0.3f, 0.3f, 0.4f, 0.5f);
+        RectTransform rtDiv = divider.GetComponent<RectTransform>();
+        rtDiv.sizeDelta = new Vector2(0f, 2f);
+
+        // 4. DescText (説明文)
+        GameObject descObj = new GameObject("DescText");
+        descObj.transform.SetParent(detailPanelObj.transform, false);
+        detailDescText = descObj.AddComponent<TextMeshProUGUI>();
+        detailDescText.fontSize = 12f;
+        detailDescText.color = Color.white;
+        detailDescText.enableWordWrapping = true;
+
+        // 5. StatsContainer (パラメータ一覧)
+        detailStatsContainer = new GameObject("StatsContainer");
+        detailStatsContainer.transform.SetParent(detailPanelObj.transform, false);
+        VerticalLayoutGroup statsLayout = detailStatsContainer.AddComponent<VerticalLayoutGroup>();
+        statsLayout.spacing = 4f;
+        statsLayout.childControlHeight = true;
+        statsLayout.childControlWidth = true;
+        statsLayout.childForceExpandHeight = false;
+        statsLayout.childForceExpandWidth = true;
+
+        // 初期状態は非アクティブ
+        detailPanelObj.SetActive(false);
+    }
+
+    private void OnSelectionChanged(ISelectable selectable)
+    {
+        if (selectable != null)
+        {
+            // パネルの情報を更新
+            detailNameText.text = selectable.GetSelectionName();
+            detailDescText.text = selectable.GetSelectionDescription();
+
+            // 既存のパラメータテキストをクリア
+            foreach (var txt in activeStatTexts)
+            {
+                if (txt != null) Destroy(txt.gameObject);
+            }
+            activeStatTexts.Clear();
+
+            // パラメータを動的生成
+            var stats = selectable.GetSelectionStats();
+            if (stats != null)
+            {
+                foreach (var kvp in stats)
+                {
+                    GameObject statObj = new GameObject("Stat_" + kvp.Key);
+                    statObj.transform.SetParent(detailStatsContainer.transform, false);
+                    TextMeshProUGUI statText = statObj.AddComponent<TextMeshProUGUI>();
+                    statText.fontSize = 12f;
+                    statText.color = new Color(0.8f, 0.8f, 0.8f, 1f);
+                    statText.text = $"• {kvp.Key}: <color=#FFFFFF>{kvp.Value}</color>";
+                    activeStatTexts.Add(statText);
+                }
+            }
+
+            // タスクパネル（ボタン群）を非表示
+            if (taskPanelObject != null)
+            {
+                taskPanelObject.SetActive(false);
+            }
+
+            // 詳細パネルを表示
+            detailPanelObj.SetActive(true);
+        }
+        else
+        {
+            // 詳細パネルを非表示
+            if (detailPanelObj != null)
+            {
+                detailPanelObj.SetActive(false);
+            }
+
+            // タスクパネル（ボタン群）を再表示
+            if (taskPanelObject != null)
+            {
+                taskPanelObject.SetActive(true);
+            }
+        }
     }
 }

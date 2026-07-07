@@ -2,7 +2,7 @@ using UnityEngine;
 using UnityEngine.AI;
 
 [RequireComponent(typeof(NavMeshAgent))]
-public class NPCController : MonoBehaviour
+public class NPCController : MonoBehaviour, ISelectable
 {
     [Header("Visual Settings")]
     [SerializeField] private float buildModeAlpha = 0.3f;
@@ -967,5 +967,51 @@ public class NPCController : MonoBehaviour
         }
 
         selectionRing.SetActive(false);
+    }
+
+    // ==================== ISelectable Implementation ====================
+
+    public string GetSelectionName()
+    {
+        return $"生存者 ({gameObject.name})";
+    }
+
+    public string GetSelectionDescription()
+    {
+        return "指示を出して資源採取や建築、運搬を行ってくれる心強い生存者です。";
+    }
+
+    public Dictionary<string, string> GetSelectionStats()
+    {
+        var stats = new Dictionary<string, string>();
+        stats.Add("現在の行動", GetStateNameJapanese());
+        stats.Add("運搬アイテム", carryingAmount > 0 ? $"{GetResourceTypeJapanese(carryingResourceType)} × {carryingAmount}" : "なし");
+        stats.Add("最大可搬量", maxCarryAmount.ToString());
+        return stats;
+    }
+
+    private string GetStateNameJapanese()
+    {
+        switch (CurrentState)
+        {
+            case NPCState.Idle: return "待機中";
+            case NPCState.Wander: return "うろうろ";
+            case NPCState.Moving: return "移動中";
+            case NPCState.Gathering: return "資源採取中";
+            case NPCState.Hauling: return "アイテム運搬中";
+            case NPCState.PutAway: return "道具の片づけ中";
+            default: return CurrentState.ToString();
+        }
+    }
+
+    private string GetResourceTypeJapanese(ResourceType type)
+    {
+        switch (type)
+        {
+            case ResourceType.Wood: return "木材";
+            case ResourceType.Stone: return "石材";
+            case ResourceType.Food: return "食料";
+            default: return type.ToString();
+        }
     }
 }
