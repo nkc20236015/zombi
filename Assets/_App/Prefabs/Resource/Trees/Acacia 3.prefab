@@ -68,6 +68,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Acacia 3
       objectReference: {fileID: 0}
+    - target: {fileID: 2242978986388914004, guid: 87a5fe0628adfab4885b84b82e192d31, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 4732506563102984614, guid: 87a5fe0628adfab4885b84b82e192d31, type: 3}
       propertyPath: m_CullingMode
       value: 2
@@ -78,7 +82,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5843155366443361453, guid: 87a5fe0628adfab4885b84b82e192d31, type: 3}
       propertyPath: m_Enabled
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5843155366443361453, guid: 87a5fe0628adfab4885b84b82e192d31, type: 3}
       propertyPath: m_LocalReferencePoint.x
@@ -100,6 +104,10 @@ PrefabInstance:
       propertyPath: m_LODs.Array.data[1].renderers.Array.data[0].renderer
       value: 
       objectReference: {fileID: 9081810063410056188}
+    - target: {fileID: 7428078075685075919, guid: 87a5fe0628adfab4885b84b82e192d31, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     m_RemovedComponents:
     - {fileID: 1877290241391001879, guid: 87a5fe0628adfab4885b84b82e192d31, type: 3}
     - {fileID: 4732506563102984614, guid: 87a5fe0628adfab4885b84b82e192d31, type: 3}

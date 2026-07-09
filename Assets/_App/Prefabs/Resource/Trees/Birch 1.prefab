@@ -17,6 +17,10 @@ PrefabInstance:
       value: 11.00532
       objectReference: {fileID: 0}
     - target: {fileID: 4277140777508280000, guid: c0389dcba0298ac4d84201150c1b06e0, type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4277140777508280000, guid: c0389dcba0298ac4d84201150c1b06e0, type: 3}
       propertyPath: m_LocalReferencePoint.x
       value: -0.105355024
       objectReference: {fileID: 0}
@@ -36,6 +40,14 @@ PrefabInstance:
       propertyPath: m_LODs.Array.data[1].renderers.Array.data[0].renderer
       value: 
       objectReference: {fileID: 5563243888395989218}
+    - target: {fileID: 4895750138460911668, guid: c0389dcba0298ac4d84201150c1b06e0, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6080424253516633662, guid: c0389dcba0298ac4d84201150c1b06e0, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 8523831841147779851, guid: c0389dcba0298ac4d84201150c1b06e0, type: 3}
       propertyPath: m_Name
       value: Birch 1

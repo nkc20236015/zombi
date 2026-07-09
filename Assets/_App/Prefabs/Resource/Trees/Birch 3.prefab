@@ -64,9 +64,17 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 1322570185821930775, guid: 086a25ca56b414c4897356965fd13f57, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 5610316610426443866, guid: 086a25ca56b414c4897356965fd13f57, type: 3}
       propertyPath: m_Size
       value: 24.300446
+      objectReference: {fileID: 0}
+    - target: {fileID: 5610316610426443866, guid: 086a25ca56b414c4897356965fd13f57, type: 3}
+      propertyPath: m_Enabled
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5610316610426443866, guid: 086a25ca56b414c4897356965fd13f57, type: 3}
       propertyPath: m_LocalReferencePoint.x
@@ -88,6 +96,10 @@ PrefabInstance:
       propertyPath: m_LODs.Array.data[1].renderers.Array.data[0].renderer
       value: 
       objectReference: {fileID: -8662948116683921349}
+    - target: {fileID: 6720316573608966377, guid: 086a25ca56b414c4897356965fd13f57, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 6728916906235032913, guid: 086a25ca56b414c4897356965fd13f57, type: 3}
       propertyPath: m_CullingMode
       value: 2

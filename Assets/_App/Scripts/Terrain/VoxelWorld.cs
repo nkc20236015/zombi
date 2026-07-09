@@ -90,28 +90,28 @@ public class VoxelWorld : MonoBehaviour
             if (generatedTerrain != null)
             {
                 generatedTerrainData = generatedTerrain.terrainData;
-                
                 // --- ユーザー要望：ビルボード切り替わりによるサイズ変化を完全になくす ---
                 ApplyTreeLODSettings(generatedTerrain);
-                
-                // 既存の木のスケールを0.5に修正（もし1.0なら半分にする）
+
+                // --- ユーザー要望：Terrain上の木と実体化した木のサイズを一致させる ---
+                // 前回0.5にしてしまった既存のTerrainの木を1.0に戻す
                 TreeInstance[] instances = generatedTerrainData.treeInstances;
                 bool needsUpdate = false;
                 for (int i = 0; i < instances.Length; i++)
                 {
-                    if (Mathf.Approximately(instances[i].widthScale, 1f))
+                    if (instances[i].widthScale < 0.9f || instances[i].heightScale < 0.9f)
                     {
-                        instances[i].widthScale = 0.5f;
-                        instances[i].heightScale = 0.5f;
+                        instances[i].widthScale = 1f;
+                        instances[i].heightScale = 1f;
                         needsUpdate = true;
                     }
                 }
                 if (needsUpdate)
                 {
                     generatedTerrainData.treeInstances = instances;
-                    // コライダーの更新
                     TerrainCollider tc = generatedTerrain.GetComponent<TerrainCollider>();
                     if (tc != null) tc.terrainData = generatedTerrainData;
+                    Debug.Log("[VoxelWorld] 既存のTerrain Treeのスケールを1.0に戻しました。");
                 }
             }
             
@@ -496,8 +496,8 @@ public class VoxelWorld : MonoBehaviour
                 // Terrainのローカル座標(0~1)に変換
                 instance.position = new Vector3((x + 0.5f) / worldWidthInBlocks, 0f, (z + 0.5f) / worldDepthInBlocks);
                 instance.prototypeIndex = protoIndex;
-                instance.widthScale = 0.5f;
-                instance.heightScale = 0.5f;
+                instance.widthScale = 1f;
+                instance.heightScale = 1f;
                 instance.color = Color.white;
                 instance.lightmapColor = Color.white;
                 instance.rotation = Random.Range(0f, Mathf.PI * 2f);
@@ -600,7 +600,6 @@ public class VoxelWorld : MonoBehaviour
         GameObject go = Instantiate(prefab, worldPos, Quaternion.Euler(0, instance.rotation * Mathf.Rad2Deg, 0));
         go.transform.parent = transform; // VoxelWorldの子に
         go.name = prefab.name + "_Spawned";
-        go.transform.localScale = new Vector3(instance.widthScale, instance.heightScale, instance.widthScale);
 
         // LODGroupの処理: LOD0以外のRendererを無効化してサイズ変化を防ぐ
         StripNonLOD0Renderers(go);
