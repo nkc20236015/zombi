@@ -21,8 +21,8 @@ public class HoverHighlight : MonoBehaviour
     [SerializeField] private float cancelTintStrength = 0.45f;
 
     private Renderer[] renderers;
-    private Material[][] cachedMaterials;
     private Color[][] originalColors;
+    private MaterialPropertyBlock mpb;
     private bool isHovered = false;
 
     private PlayerMode lastMode;
@@ -46,24 +46,23 @@ public class HoverHighlight : MonoBehaviour
 
     private void CacheRenderers()
     {
-        renderers = GetComponentsInChildren<Renderer>();
-        cachedMaterials = new Material[renderers.Length][];
+        renderers = GetComponentsInChildren<Renderer>(true); // 非アクティブなLODメッシュも念のため取得
         originalColors = new Color[renderers.Length][];
+        mpb = new MaterialPropertyBlock();
 
         for (int i = 0; i < renderers.Length; i++)
         {
-            // 最初に一度だけマテリアルをインスタンス化してキャッシュする
-            cachedMaterials[i] = renderers[i].materials;
-            originalColors[i] = new Color[cachedMaterials[i].Length];
+            var mats = renderers[i].sharedMaterials;
+            originalColors[i] = new Color[mats.Length];
             
-            for (int j = 0; j < cachedMaterials[i].Length; j++)
+            for (int j = 0; j < mats.Length; j++)
             {
-                if (cachedMaterials[i][j] != null)
+                if (mats[j] != null)
                 {
-                    if (cachedMaterials[i][j].HasProperty("_BaseColor"))
-                        originalColors[i][j] = cachedMaterials[i][j].GetColor("_BaseColor");
-                    else if (cachedMaterials[i][j].HasProperty("_Color"))
-                        originalColors[i][j] = cachedMaterials[i][j].GetColor("_Color");
+                    if (mats[j].HasProperty("_BaseColor"))
+                        originalColors[i][j] = mats[j].GetColor("_BaseColor");
+                    else if (mats[j].HasProperty("_Color"))
+                        originalColors[i][j] = mats[j].GetColor("_Color");
                     else
                         originalColors[i][j] = Color.white;
                 }
@@ -91,7 +90,7 @@ public class HoverHighlight : MonoBehaviour
     {
         if (!forceUpdate && isHovered == enable) return;
         isHovered = enable;
-        if (renderers == null || cachedMaterials == null) return;
+        if (renderers == null) return;
 
         // モードに応じた色と強さを決定
         PlayerMode currentMode = PlayerMode.Normal;
@@ -117,9 +116,14 @@ public class HoverHighlight : MonoBehaviour
 
         for (int i = 0; i < renderers.Length; i++)
         {
-            for (int j = 0; j < cachedMaterials[i].Length; j++)
+            if (renderers[i] == null) continue;
+            
+            var mats = renderers[i].sharedMaterials;
+            renderers[i].GetPropertyBlock(mpb);
+
+            for (int j = 0; j < mats.Length; j++)
             {
-                if (cachedMaterials[i][j] == null) continue;
+                if (mats[j] == null) continue;
 
                 Color target;
                 if (enable)
@@ -131,11 +135,13 @@ public class HoverHighlight : MonoBehaviour
                     target = originalColors[i][j];
                 }
 
-                if (cachedMaterials[i][j].HasProperty("_BaseColor"))
-                    cachedMaterials[i][j].SetColor("_BaseColor", target);
-                else if (cachedMaterials[i][j].HasProperty("_Color"))
-                    cachedMaterials[i][j].SetColor("_Color", target);
+                if (mats[j].HasProperty("_BaseColor"))
+                    mpb.SetColor("_BaseColor", target);
+                else if (mats[j].HasProperty("_Color"))
+                    mpb.SetColor("_Color", target);
             }
+            
+            renderers[i].SetPropertyBlock(mpb);
         }
     }
 
