@@ -602,6 +602,9 @@ public class VoxelWorld : MonoBehaviour
         go.name = prefab.name + "_Spawned";
         go.transform.localScale = new Vector3(instance.widthScale, instance.heightScale, instance.widthScale);
 
+        // LODGroupの処理: LOD0以外のRendererを無効化してサイズ変化を防ぐ
+        StripNonLOD0Renderers(go);
+
         // レイキャスト（クリック判定）に引っかかるよう、Resourceレイヤーに設定
         SetLayerRecursively(go, LayerMask.NameToLayer("Resource"));
 
@@ -615,6 +618,41 @@ public class VoxelWorld : MonoBehaviour
         if (tc != null) tc.terrainData = generatedTerrainData;
 
         return go;
+    }
+
+    /// <summary>
+    /// LODGroup付きのGameObjectからLOD0のRenderer以外をすべて無効化する。
+    /// LODGroupコンポーネント自体も無効化して、LOD切り替えによるサイズ変化を防ぐ。
+    /// </summary>
+    private void StripNonLOD0Renderers(GameObject go)
+    {
+        LODGroup lodGroup = go.GetComponent<LODGroup>();
+        if (lodGroup == null) return;
+
+        LOD[] lods = lodGroup.GetLODs();
+        if (lods.Length == 0) return;
+
+        // LOD0のRendererを記録
+        HashSet<Renderer> lod0Renderers = new HashSet<Renderer>();
+        foreach (Renderer r in lods[0].renderers)
+        {
+            if (r != null) lod0Renderers.Add(r);
+        }
+
+        // LOD1以降のRendererのGameObjectを非アクティブにする
+        for (int i = 1; i < lods.Length; i++)
+        {
+            foreach (Renderer r in lods[i].renderers)
+            {
+                if (r != null && !lod0Renderers.Contains(r))
+                {
+                    r.gameObject.SetActive(false);
+                }
+            }
+        }
+
+        // LODGroupを無効化（LOD0のメッシュはそのまま表示される）
+        lodGroup.enabled = false;
     }
 
     private void SetLayerRecursively(GameObject obj, int newLayer)

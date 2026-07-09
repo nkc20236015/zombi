@@ -146,14 +146,34 @@ public class TerrainTreeInteractManager : MonoBehaviour
         TreeInstance instance = instances[index];
         GameObject prefab = terrain.terrainData.treePrototypes[instance.prototypeIndex].prefab;
 
-        // ハイライト用のメッシュを探す（LOD0のメッシュ）
+        // ハイライト用のメッシュを探す（LOD0のメッシュを優先）
         Mesh targetMesh = null;
-        var meshFilters = prefab.GetComponentsInChildren<MeshFilter>();
-        if (meshFilters.Length > 0) targetMesh = meshFilters[0].sharedMesh;
-        else
+        LODGroup lodGroup = prefab.GetComponent<LODGroup>();
+        if (lodGroup != null)
         {
-            var skinned = prefab.GetComponentsInChildren<SkinnedMeshRenderer>();
-            if (skinned.Length > 0) targetMesh = skinned[0].sharedMesh;
+            LOD[] lods = lodGroup.GetLODs();
+            if (lods.Length > 0 && lods[0].renderers.Length > 0)
+            {
+                // LOD0の最初のRendererからメッシュを取得
+                Renderer lod0Renderer = lods[0].renderers[0];
+                if (lod0Renderer != null)
+                {
+                    MeshFilter mf = lod0Renderer.GetComponent<MeshFilter>();
+                    if (mf != null) targetMesh = mf.sharedMesh;
+                }
+            }
+        }
+
+        // LODGroupがない場合はフォールバック
+        if (targetMesh == null)
+        {
+            var meshFilters = prefab.GetComponentsInChildren<MeshFilter>();
+            if (meshFilters.Length > 0) targetMesh = meshFilters[0].sharedMesh;
+            else
+            {
+                var skinned = prefab.GetComponentsInChildren<SkinnedMeshRenderer>();
+                if (skinned.Length > 0) targetMesh = skinned[0].sharedMesh;
+            }
         }
 
         if (targetMesh != null)
@@ -165,8 +185,13 @@ public class TerrainTreeInteractManager : MonoBehaviour
             highlightObject.transform.position = worldPos;
             highlightObject.transform.rotation = Quaternion.Euler(0, instance.rotation * Mathf.Rad2Deg, 0);
             
-            // プレハブがスケール0.5を持っているので、それに合わせる（Zファイティング防止のため僅かに大きくする）
-            highlightObject.transform.localScale = prefab.transform.localScale * 1.02f;
+            // プレハブのスケールにTerrainのインスタンススケールを掛ける（Zファイティング防止のため僅かに大きくする）
+            Vector3 prefabScale = prefab.transform.localScale;
+            highlightObject.transform.localScale = new Vector3(
+                prefabScale.x * instance.widthScale * 1.02f,
+                prefabScale.y * instance.heightScale * 1.02f,
+                prefabScale.z * instance.widthScale * 1.02f
+            );
         }
     }
 
