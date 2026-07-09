@@ -91,8 +91,8 @@ public class VoxelWorld : MonoBehaviour
             {
                 generatedTerrainData = generatedTerrain.terrainData;
                 
-                // --- ユーザー要望：ビルボード切り替わりによるサイズ変化をなくし、スケールを半分にする ---
-                generatedTerrain.treeBillboardDistance = 2000f; // ビルボード（2D）への切り替えを無効化（常に3D表示）
+                // --- ユーザー要望：ビルボード切り替わりによるサイズ変化を完全になくす ---
+                ApplyTreeLODSettings(generatedTerrain);
                 
                 // 既存の木のスケールを0.5に修正（もし1.0なら半分にする）
                 TreeInstance[] instances = generatedTerrainData.treeInstances;
@@ -200,8 +200,8 @@ public class VoxelWorld : MonoBehaviour
         generatedTerrain.basemapDistance = 300;
         generatedTerrain.drawInstanced = true;
         
-        // --- ユーザー要望：ビルボード切り替わりによるサイズ変化をなくす ---
-        generatedTerrain.treeBillboardDistance = 2000f; 
+        // --- ユーザー要望：ビルボード切り替わりによるサイズ変化を完全になくす ---
+        ApplyTreeLODSettings(generatedTerrain);
 
         Debug.Log("[VoxelWorld] Unity Terrain を生成しました。");
     }
@@ -549,6 +549,29 @@ public class VoxelWorld : MonoBehaviour
         tc.terrainData = generatedTerrainData;
 
         Debug.Log($"[VoxelWorld] Terrain Tree の自動生成完了: {treeCount}本, キノコ生成完了: {mushroomCount}個");
+    }
+
+    // ==================== Terrain Tree LOD Settings ====================
+
+    /// <summary>
+    /// Terrainの木のLOD/ビルボード設定をすべて無効化し、
+    /// カメラが近づいた時にサイズが変わる問題を完全になくす。
+    /// </summary>
+    private void ApplyTreeLODSettings(Terrain terrain)
+    {
+        // ビルボード（2D画像）への切り替え距離を極めて遠くする → 常に3Dモデル表示
+        terrain.treeBillboardDistance = 50000f;
+        
+        // 木の最大描画距離を十分大きくする（距離LODによる消滅を防ぐ）
+        terrain.treeDistance = 50000f;
+        
+        // ビルボードと3Dモデル間のクロスフェード長を0にする（中間状態をなくす）
+        terrain.treeCrossFadeLength = 0f;
+        
+        // フルLOD（最高品質）で表示する木の本数上限を大きくする
+        terrain.treeMaximumFullLODCount = 10000;
+        
+        Debug.Log("[VoxelWorld] Terrain Tree LOD設定を適用: ビルボード/LOD切り替えを完全無効化");
     }
 
     // ==================== Terrain Tree Interaction ====================
