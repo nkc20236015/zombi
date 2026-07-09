@@ -73,6 +73,10 @@ PrefabInstance:
       value: 12.838282
       objectReference: {fileID: 0}
     - target: {fileID: 5843155366443361453, guid: 87a5fe0628adfab4885b84b82e192d31, type: 3}
+      propertyPath: m_Enabled
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5843155366443361453, guid: 87a5fe0628adfab4885b84b82e192d31, type: 3}
       propertyPath: m_LocalReferencePoint.x
       value: 0.16543388
       objectReference: {fileID: 0}
@@ -287,3 +291,5 @@ MonoBehaviour:
   fallDuration: 1.5
   fallAngle: 85
   disappearDelay: 1
+  timeToRipe: 1080
+  initialGrowthScale: 0.4
