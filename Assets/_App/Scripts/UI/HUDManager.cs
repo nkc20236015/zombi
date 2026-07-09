@@ -414,6 +414,15 @@ public class HUDManager : MonoBehaviour
             }
             activeStatTexts.Clear();
 
+            // プレハブ内に残っているダミーテキスト等も確実に削除する
+            if (detailStatsContainer != null)
+            {
+                foreach (Transform child in detailStatsContainer.transform)
+                {
+                    Destroy(child.gameObject);
+                }
+            }
+
             var stats = selectable.GetSelectionStats();
             if (stats != null && detailStatsContainer != null)
             {
