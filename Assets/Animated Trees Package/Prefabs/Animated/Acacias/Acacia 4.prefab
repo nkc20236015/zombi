@@ -54,7 +54,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: b5673c11a97a4304da56c4ba7f4c4673, type: 3}
       propertyPath: m_Name
-      value: Acacia_4
+      value: Acacia 4
       objectReference: {fileID: 0}
     - target: {fileID: 4204334512952995265, guid: b5673c11a97a4304da56c4ba7f4c4673, type: 3}
       propertyPath: m_CastShadows
@@ -69,20 +69,24 @@ PrefabInstance:
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 4742473837712756890, guid: b5673c11a97a4304da56c4ba7f4c4673, type: 3}
+      propertyPath: m_LODs.Array.size
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4742473837712756890, guid: b5673c11a97a4304da56c4ba7f4c4673, type: 3}
       propertyPath: m_AnimateCrossFading
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 4742473837712756890, guid: b5673c11a97a4304da56c4ba7f4c4673, type: 3}
       propertyPath: m_LocalReferencePoint.x
-      value: 0.45407772
+      value: 0.45407677
       objectReference: {fileID: 0}
     - target: {fileID: 4742473837712756890, guid: b5673c11a97a4304da56c4ba7f4c4673, type: 3}
       propertyPath: m_LocalReferencePoint.y
-      value: 6.7725787
+      value: 6.7725782
       objectReference: {fileID: 0}
     - target: {fileID: 4742473837712756890, guid: b5673c11a97a4304da56c4ba7f4c4673, type: 3}
       propertyPath: m_LocalReferencePoint.z
-      value: 0.651886
+      value: 0.6518841
       objectReference: {fileID: 0}
     - target: {fileID: 4742473837712756890, guid: b5673c11a97a4304da56c4ba7f4c4673, type: 3}
       propertyPath: m_LODs.Array.data[0].renderers.Array.size
@@ -90,7 +94,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4742473837712756890, guid: b5673c11a97a4304da56c4ba7f4c4673, type: 3}
       propertyPath: m_LODs.Array.data[0].screenRelativeHeight
-      value: 0.6004905
+      value: 0.001
       objectReference: {fileID: 0}
     - target: {fileID: 4742473837712756890, guid: b5673c11a97a4304da56c4ba7f4c4673, type: 3}
       propertyPath: m_LODs.Array.data[1].renderers.Array.size

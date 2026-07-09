@@ -62,10 +62,14 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4742473837712756890, guid: fd79e22017fef2240ba1062a4090190b, type: 3}
       propertyPath: m_Size
-      value: 25.277287
+      value: 24.888744
       objectReference: {fileID: 0}
     - target: {fileID: 4742473837712756890, guid: fd79e22017fef2240ba1062a4090190b, type: 3}
       propertyPath: m_FadeMode
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4742473837712756890, guid: fd79e22017fef2240ba1062a4090190b, type: 3}
+      propertyPath: m_LODs.Array.size
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 4742473837712756890, guid: fd79e22017fef2240ba1062a4090190b, type: 3}
@@ -74,15 +78,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4742473837712756890, guid: fd79e22017fef2240ba1062a4090190b, type: 3}
       propertyPath: m_LocalReferencePoint.x
-      value: 0.575037
+      value: 0.6117258
       objectReference: {fileID: 0}
     - target: {fileID: 4742473837712756890, guid: fd79e22017fef2240ba1062a4090190b, type: 3}
       propertyPath: m_LocalReferencePoint.y
-      value: 12.070318
+      value: 12.264589
       objectReference: {fileID: 0}
     - target: {fileID: 4742473837712756890, guid: fd79e22017fef2240ba1062a4090190b, type: 3}
       propertyPath: m_LocalReferencePoint.z
-      value: -0.31486654
+      value: -0.31485367
       objectReference: {fileID: 0}
     - target: {fileID: 4742473837712756890, guid: fd79e22017fef2240ba1062a4090190b, type: 3}
       propertyPath: m_LODs.Array.data[0].renderers.Array.size
@@ -90,7 +94,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4742473837712756890, guid: fd79e22017fef2240ba1062a4090190b, type: 3}
       propertyPath: m_LODs.Array.data[0].screenRelativeHeight
-      value: 0.6004905
+      value: 0.001
       objectReference: {fileID: 0}
     - target: {fileID: 4742473837712756890, guid: fd79e22017fef2240ba1062a4090190b, type: 3}
       propertyPath: m_LODs.Array.data[1].renderers.Array.size

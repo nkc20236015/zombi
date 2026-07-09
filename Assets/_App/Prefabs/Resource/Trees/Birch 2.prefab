@@ -70,19 +70,19 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8779710006740233666, guid: f39c3a8a7ab8b6a43aeaf93ab228148e, type: 3}
       propertyPath: m_Size
-      value: 21.261715
+      value: 10.706851
       objectReference: {fileID: 0}
     - target: {fileID: 8779710006740233666, guid: f39c3a8a7ab8b6a43aeaf93ab228148e, type: 3}
       propertyPath: m_LocalReferencePoint.x
-      value: -0.5293088
+      value: -0.28569388
       objectReference: {fileID: 0}
     - target: {fileID: 8779710006740233666, guid: f39c3a8a7ab8b6a43aeaf93ab228148e, type: 3}
       propertyPath: m_LocalReferencePoint.y
-      value: 10.124252
+      value: 5.322004
       objectReference: {fileID: 0}
     - target: {fileID: 8779710006740233666, guid: f39c3a8a7ab8b6a43aeaf93ab228148e, type: 3}
       propertyPath: m_LocalReferencePoint.z
-      value: 0.44794846
+      value: 0.29913902
       objectReference: {fileID: 0}
     - target: {fileID: 8779710006740233666, guid: f39c3a8a7ab8b6a43aeaf93ab228148e, type: 3}
       propertyPath: m_LODs.Array.data[0].renderers.Array.data[0].renderer
@@ -228,6 +228,8 @@ MonoBehaviour:
   fallDuration: 1.5
   fallAngle: 85
   disappearDelay: 1
+  timeToRipe: 1080
+  initialGrowthScale: 0.4
 --- !u!1 &9128114929760657360 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 7435599652792383310, guid: f39c3a8a7ab8b6a43aeaf93ab228148e, type: 3}

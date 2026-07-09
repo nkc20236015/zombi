@@ -54,14 +54,18 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: 0382c68ca86e90141808c05000074866, type: 3}
       propertyPath: m_Name
-      value: Birch_3
+      value: Birch 3
       objectReference: {fileID: 0}
     - target: {fileID: 4742473837712756890, guid: 0382c68ca86e90141808c05000074866, type: 3}
       propertyPath: m_Size
-      value: 25.299788
+      value: 24.917084
       objectReference: {fileID: 0}
     - target: {fileID: 4742473837712756890, guid: 0382c68ca86e90141808c05000074866, type: 3}
       propertyPath: m_FadeMode
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4742473837712756890, guid: 0382c68ca86e90141808c05000074866, type: 3}
+      propertyPath: m_LODs.Array.size
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 4742473837712756890, guid: 0382c68ca86e90141808c05000074866, type: 3}
@@ -70,15 +74,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4742473837712756890, guid: 0382c68ca86e90141808c05000074866, type: 3}
       propertyPath: m_LocalReferencePoint.x
-      value: -0.09894228
+      value: -0.09896994
       objectReference: {fileID: 0}
     - target: {fileID: 4742473837712756890, guid: 0382c68ca86e90141808c05000074866, type: 3}
       propertyPath: m_LocalReferencePoint.y
-      value: 12.070939
+      value: 12.257715
       objectReference: {fileID: 0}
     - target: {fileID: 4742473837712756890, guid: 0382c68ca86e90141808c05000074866, type: 3}
       propertyPath: m_LocalReferencePoint.z
-      value: -0.08883953
+      value: -0.088820934
       objectReference: {fileID: 0}
     - target: {fileID: 4742473837712756890, guid: 0382c68ca86e90141808c05000074866, type: 3}
       propertyPath: m_LODs.Array.data[0].renderers.Array.size
@@ -86,7 +90,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4742473837712756890, guid: 0382c68ca86e90141808c05000074866, type: 3}
       propertyPath: m_LODs.Array.data[0].screenRelativeHeight
-      value: 0.6004905
+      value: 0.001
       objectReference: {fileID: 0}
     - target: {fileID: 4742473837712756890, guid: 0382c68ca86e90141808c05000074866, type: 3}
       propertyPath: m_LODs.Array.data[1].renderers.Array.size

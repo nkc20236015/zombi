@@ -228,6 +228,8 @@ MonoBehaviour:
   fallDuration: 1.5
   fallAngle: 85
   disappearDelay: 1
+  timeToRipe: 1080
+  initialGrowthScale: 0.4
 --- !u!1 &8442945487124840117 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 4180808696669383285, guid: 086a25ca56b414c4897356965fd13f57, type: 3}

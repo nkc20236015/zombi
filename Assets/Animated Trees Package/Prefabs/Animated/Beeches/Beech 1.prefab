@@ -54,14 +54,18 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: 345d0bdcf47742540bd68c4b48db2260, type: 3}
       propertyPath: m_Name
-      value: Beech_1
+      value: Beech 1
       objectReference: {fileID: 0}
     - target: {fileID: 4742473837712756890, guid: 345d0bdcf47742540bd68c4b48db2260, type: 3}
       propertyPath: m_Size
-      value: 23.421827
+      value: 23.1652
       objectReference: {fileID: 0}
     - target: {fileID: 4742473837712756890, guid: 345d0bdcf47742540bd68c4b48db2260, type: 3}
       propertyPath: m_FadeMode
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4742473837712756890, guid: 345d0bdcf47742540bd68c4b48db2260, type: 3}
+      propertyPath: m_LODs.Array.size
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 4742473837712756890, guid: 345d0bdcf47742540bd68c4b48db2260, type: 3}
@@ -70,15 +74,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4742473837712756890, guid: 345d0bdcf47742540bd68c4b48db2260, type: 3}
       propertyPath: m_LocalReferencePoint.x
-      value: -0.30641794
+      value: -0.30641842
       objectReference: {fileID: 0}
     - target: {fileID: 4742473837712756890, guid: 345d0bdcf47742540bd68c4b48db2260, type: 3}
       propertyPath: m_LocalReferencePoint.y
-      value: 11.179479
+      value: 11.307793
       objectReference: {fileID: 0}
     - target: {fileID: 4742473837712756890, guid: 345d0bdcf47742540bd68c4b48db2260, type: 3}
       propertyPath: m_LocalReferencePoint.z
-      value: -0.49247456
+      value: -0.49247646
       objectReference: {fileID: 0}
     - target: {fileID: 4742473837712756890, guid: 345d0bdcf47742540bd68c4b48db2260, type: 3}
       propertyPath: m_LODs.Array.data[0].renderers.Array.size
@@ -86,7 +90,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4742473837712756890, guid: 345d0bdcf47742540bd68c4b48db2260, type: 3}
       propertyPath: m_LODs.Array.data[0].screenRelativeHeight
-      value: 0.6004905
+      value: 0.001
       objectReference: {fileID: 0}
     - target: {fileID: 4742473837712756890, guid: 345d0bdcf47742540bd68c4b48db2260, type: 3}
       propertyPath: m_LODs.Array.data[1].renderers.Array.size

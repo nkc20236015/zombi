@@ -58,7 +58,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4742473837712756890, guid: f73576a8b2a96c641ad588f21b28c017, type: 3}
       propertyPath: m_Size
-      value: 19.322914
+      value: 18.945683
       objectReference: {fileID: 0}
     - target: {fileID: 4742473837712756890, guid: f73576a8b2a96c641ad588f21b28c017, type: 3}
       propertyPath: m_FadeMode
@@ -66,7 +66,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4742473837712756890, guid: f73576a8b2a96c641ad588f21b28c017, type: 3}
       propertyPath: m_LODs.Array.size
-      value: 3
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 4742473837712756890, guid: f73576a8b2a96c641ad588f21b28c017, type: 3}
       propertyPath: m_AnimateCrossFading
@@ -74,15 +74,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4742473837712756890, guid: f73576a8b2a96c641ad588f21b28c017, type: 3}
       propertyPath: m_LocalReferencePoint.x
-      value: 0.3242972
+      value: 0.042450428
       objectReference: {fileID: 0}
     - target: {fileID: 4742473837712756890, guid: f73576a8b2a96c641ad588f21b28c017, type: 3}
       propertyPath: m_LocalReferencePoint.y
-      value: 9.201015
+      value: 9.325476
       objectReference: {fileID: 0}
     - target: {fileID: 4742473837712756890, guid: f73576a8b2a96c641ad588f21b28c017, type: 3}
       propertyPath: m_LocalReferencePoint.z
-      value: 0.07829094
+      value: -0.057732582
       objectReference: {fileID: 0}
     - target: {fileID: 4742473837712756890, guid: f73576a8b2a96c641ad588f21b28c017, type: 3}
       propertyPath: m_LODs.Array.data[0].renderers.Array.size
@@ -90,7 +90,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4742473837712756890, guid: f73576a8b2a96c641ad588f21b28c017, type: 3}
       propertyPath: m_LODs.Array.data[0].screenRelativeHeight
-      value: 0.6004905
+      value: 0.001
       objectReference: {fileID: 0}
     - target: {fileID: 4742473837712756890, guid: f73576a8b2a96c641ad588f21b28c017, type: 3}
       propertyPath: m_LODs.Array.data[1].renderers.Array.size

@@ -54,7 +54,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: f6f54cc98ea429b48b236e9d84826150, type: 3}
       propertyPath: m_Name
-      value: Birch_2
+      value: Birch 2
       objectReference: {fileID: 0}
     - target: {fileID: 4400896258337148957, guid: f6f54cc98ea429b48b236e9d84826150, type: 3}
       propertyPath: m_CastShadows
@@ -62,10 +62,14 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4742473837712756890, guid: f6f54cc98ea429b48b236e9d84826150, type: 3}
       propertyPath: m_Size
-      value: 22.043867
+      value: 21.740646
       objectReference: {fileID: 0}
     - target: {fileID: 4742473837712756890, guid: f6f54cc98ea429b48b236e9d84826150, type: 3}
       propertyPath: m_FadeMode
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4742473837712756890, guid: f6f54cc98ea429b48b236e9d84826150, type: 3}
+      propertyPath: m_LODs.Array.size
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 4742473837712756890, guid: f6f54cc98ea429b48b236e9d84826150, type: 3}
@@ -74,15 +78,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4742473837712756890, guid: f6f54cc98ea429b48b236e9d84826150, type: 3}
       propertyPath: m_LocalReferencePoint.x
-      value: -0.5939512
+      value: -0.5939293
       objectReference: {fileID: 0}
     - target: {fileID: 4742473837712756890, guid: f6f54cc98ea429b48b236e9d84826150, type: 3}
       propertyPath: m_LocalReferencePoint.y
-      value: 10.515328
+      value: 10.666935
       objectReference: {fileID: 0}
     - target: {fileID: 4742473837712756890, guid: f6f54cc98ea429b48b236e9d84826150, type: 3}
       propertyPath: m_LocalReferencePoint.z
-      value: 0.59304523
+      value: 0.59303
       objectReference: {fileID: 0}
     - target: {fileID: 4742473837712756890, guid: f6f54cc98ea429b48b236e9d84826150, type: 3}
       propertyPath: m_LODs.Array.data[0].renderers.Array.size
@@ -90,7 +94,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4742473837712756890, guid: f6f54cc98ea429b48b236e9d84826150, type: 3}
       propertyPath: m_LODs.Array.data[0].screenRelativeHeight
-      value: 0.6004905
+      value: 0.001
       objectReference: {fileID: 0}
     - target: {fileID: 4742473837712756890, guid: f6f54cc98ea429b48b236e9d84826150, type: 3}
       propertyPath: m_LODs.Array.data[1].renderers.Array.size
