@@ -21,9 +21,10 @@ public class HoverHighlight : MonoBehaviour
     [SerializeField] private float cancelTintStrength = 0.45f;
 
     private Renderer[] renderers;
+    private Material[][] instanceMaterials; // renderer.materials で生成されたインスタンス
     private Color[][] originalColors;
-    private MaterialPropertyBlock mpb;
     private bool isHovered = false;
+    private bool isCached = false;
 
     private PlayerMode lastMode;
 
@@ -46,28 +47,32 @@ public class HoverHighlight : MonoBehaviour
 
     private void CacheRenderers()
     {
-        renderers = GetComponentsInChildren<Renderer>(true); // 非アクティブなLODメッシュも念のため取得
+        // アクティブなRendererのみ取得（LOD1+は非アクティブ化済み）
+        renderers = GetComponentsInChildren<Renderer>(false);
+        instanceMaterials = new Material[renderers.Length][];
         originalColors = new Color[renderers.Length][];
-        mpb = new MaterialPropertyBlock();
 
         for (int i = 0; i < renderers.Length; i++)
         {
-            var mats = renderers[i].sharedMaterials;
-            originalColors[i] = new Color[mats.Length];
-            
-            for (int j = 0; j < mats.Length; j++)
+            // renderer.materials はインスタンスのコピーを返す
+            // これを保持しておけば sharedMaterials を汚染せずに色を変更できる
+            instanceMaterials[i] = renderers[i].materials;
+            originalColors[i] = new Color[instanceMaterials[i].Length];
+
+            for (int j = 0; j < instanceMaterials[i].Length; j++)
             {
-                if (mats[j] != null)
+                if (instanceMaterials[i][j] != null)
                 {
-                    if (mats[j].HasProperty("_BaseColor"))
-                        originalColors[i][j] = mats[j].GetColor("_BaseColor");
-                    else if (mats[j].HasProperty("_Color"))
-                        originalColors[i][j] = mats[j].GetColor("_Color");
+                    if (instanceMaterials[i][j].HasProperty("_BaseColor"))
+                        originalColors[i][j] = instanceMaterials[i][j].GetColor("_BaseColor");
+                    else if (instanceMaterials[i][j].HasProperty("_Color"))
+                        originalColors[i][j] = instanceMaterials[i][j].GetColor("_Color");
                     else
                         originalColors[i][j] = Color.white;
                 }
             }
         }
+        isCached = true;
     }
 
     void OnMouseEnter()
@@ -77,6 +82,9 @@ public class HoverHighlight : MonoBehaviour
 
         if (UnityEngine.EventSystems.EventSystem.current != null &&
             UnityEngine.EventSystems.EventSystem.current.IsPointerOverGameObject()) return;
+
+        // まだキャッシュされていない場合（動的に追加された場合など）
+        if (!isCached) CacheRenderers();
 
         SetHighlight(true);
     }
@@ -90,7 +98,7 @@ public class HoverHighlight : MonoBehaviour
     {
         if (!forceUpdate && isHovered == enable) return;
         isHovered = enable;
-        if (renderers == null) return;
+        if (renderers == null || instanceMaterials == null) return;
 
         // モードに応じた色と強さを決定
         PlayerMode currentMode = PlayerMode.Normal;
@@ -117,13 +125,10 @@ public class HoverHighlight : MonoBehaviour
         for (int i = 0; i < renderers.Length; i++)
         {
             if (renderers[i] == null) continue;
-            
-            var mats = renderers[i].sharedMaterials;
-            renderers[i].GetPropertyBlock(mpb);
 
-            for (int j = 0; j < mats.Length; j++)
+            for (int j = 0; j < instanceMaterials[i].Length; j++)
             {
-                if (mats[j] == null) continue;
+                if (instanceMaterials[i][j] == null) continue;
 
                 Color target;
                 if (enable)
@@ -135,13 +140,11 @@ public class HoverHighlight : MonoBehaviour
                     target = originalColors[i][j];
                 }
 
-                if (mats[j].HasProperty("_BaseColor"))
-                    mpb.SetColor("_BaseColor", target);
-                else if (mats[j].HasProperty("_Color"))
-                    mpb.SetColor("_Color", target);
+                if (instanceMaterials[i][j].HasProperty("_BaseColor"))
+                    instanceMaterials[i][j].SetColor("_BaseColor", target);
+                else if (instanceMaterials[i][j].HasProperty("_Color"))
+                    instanceMaterials[i][j].SetColor("_Color", target);
             }
-            
-            renderers[i].SetPropertyBlock(mpb);
         }
     }
 
