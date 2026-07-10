@@ -21,7 +21,7 @@ public class HoverHighlight : MonoBehaviour
     [SerializeField] private float cancelTintStrength = 0.45f;
 
     private Renderer[] renderers;
-    private Material[][] instanceMaterials; // renderer.materials で生成されたインスタンス
+    private Material[][] originalSharedMats; // 復元用のオリジナルsharedMaterials
     private Color[][] originalColors;
     private bool isHovered = false;
     private bool isCached = false;
@@ -49,24 +49,23 @@ public class HoverHighlight : MonoBehaviour
     {
         // アクティブなRendererのみ取得（LOD1+は非アクティブ化済み）
         renderers = GetComponentsInChildren<Renderer>(false);
-        instanceMaterials = new Material[renderers.Length][];
+        originalSharedMats = new Material[renderers.Length][];
         originalColors = new Color[renderers.Length][];
 
         for (int i = 0; i < renderers.Length; i++)
         {
-            // renderer.materials はインスタンスのコピーを返す
-            // これを保持しておけば sharedMaterials を汚染せずに色を変更できる
-            instanceMaterials[i] = renderers[i].materials;
-            originalColors[i] = new Color[instanceMaterials[i].Length];
+            // sharedMaterialsを保存（復元用・色の読み取り用）
+            originalSharedMats[i] = renderers[i].sharedMaterials;
+            originalColors[i] = new Color[originalSharedMats[i].Length];
 
-            for (int j = 0; j < instanceMaterials[i].Length; j++)
+            for (int j = 0; j < originalSharedMats[i].Length; j++)
             {
-                if (instanceMaterials[i][j] != null)
+                if (originalSharedMats[i][j] != null)
                 {
-                    if (instanceMaterials[i][j].HasProperty("_BaseColor"))
-                        originalColors[i][j] = instanceMaterials[i][j].GetColor("_BaseColor");
-                    else if (instanceMaterials[i][j].HasProperty("_Color"))
-                        originalColors[i][j] = instanceMaterials[i][j].GetColor("_Color");
+                    if (originalSharedMats[i][j].HasProperty("_BaseColor"))
+                        originalColors[i][j] = originalSharedMats[i][j].GetColor("_BaseColor");
+                    else if (originalSharedMats[i][j].HasProperty("_Color"))
+                        originalColors[i][j] = originalSharedMats[i][j].GetColor("_Color");
                     else
                         originalColors[i][j] = Color.white;
                 }
@@ -98,7 +97,7 @@ public class HoverHighlight : MonoBehaviour
     {
         if (!forceUpdate && isHovered == enable) return;
         isHovered = enable;
-        if (renderers == null || instanceMaterials == null) return;
+        if (renderers == null || originalSharedMats == null) return;
 
         // モードに応じた色と強さを決定
         PlayerMode currentMode = PlayerMode.Normal;
@@ -126,24 +125,25 @@ public class HoverHighlight : MonoBehaviour
         {
             if (renderers[i] == null) continue;
 
-            for (int j = 0; j < instanceMaterials[i].Length; j++)
+            if (enable)
             {
-                if (instanceMaterials[i][j] == null) continue;
-
-                Color target;
-                if (enable)
+                // renderer.materials でインスタンス化されたコピーを取得・適用し、色を変更
+                Material[] mats = renderers[i].materials;
+                for (int j = 0; j < mats.Length; j++)
                 {
-                    target = Color.Lerp(originalColors[i][j], tint, strength);
-                }
-                else
-                {
-                    target = originalColors[i][j];
-                }
+                    if (mats[j] == null) continue;
+                    Color target = Color.Lerp(originalColors[i][j], tint, strength);
 
-                if (instanceMaterials[i][j].HasProperty("_BaseColor"))
-                    instanceMaterials[i][j].SetColor("_BaseColor", target);
-                else if (instanceMaterials[i][j].HasProperty("_Color"))
-                    instanceMaterials[i][j].SetColor("_Color", target);
+                    if (mats[j].HasProperty("_BaseColor"))
+                        mats[j].SetColor("_BaseColor", target);
+                    else if (mats[j].HasProperty("_Color"))
+                        mats[j].SetColor("_Color", target);
+                }
+            }
+            else
+            {
+                // オリジナルのsharedMaterialsに戻す（インスタンスを破棄）
+                renderers[i].sharedMaterials = originalSharedMats[i];
             }
         }
     }
