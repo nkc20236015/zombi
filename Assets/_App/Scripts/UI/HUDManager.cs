@@ -340,6 +340,14 @@ public class HUDManager : MonoBehaviour
             Transform statsTr = detailPanelObj.transform.Find("StatsContainer");
             if (statsTr != null) detailStatsContainer = statsTr.gameObject;
             
+            // プレハブ使用時も枠（Outline）を追加する
+            if (detailPanelObj.GetComponent<Outline>() == null)
+            {
+                Outline outline = detailPanelObj.AddComponent<Outline>();
+                outline.effectColor = new Color(0.5f, 0.5f, 0.5f, 1f);
+                outline.effectDistance = new Vector2(2f, -2f);
+            }
+
             detailPanelObj.SetActive(false);
             return;
         }
@@ -358,6 +366,10 @@ public class HUDManager : MonoBehaviour
 
         Image bgImage = detailPanelObj.AddComponent<Image>();
         bgImage.color = new Color(0.1f, 0.1f, 0.15f, 0.9f);
+
+        Outline outline = detailPanelObj.AddComponent<Outline>();
+        outline.effectColor = new Color(0.5f, 0.5f, 0.5f, 1f);
+        outline.effectDistance = new Vector2(2f, -2f);
 
         VerticalLayoutGroup layout = detailPanelObj.AddComponent<VerticalLayoutGroup>();
         layout.padding = new RectOffset(15, 15, 15, 15);
