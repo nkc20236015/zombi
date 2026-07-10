@@ -343,9 +343,9 @@ public class HUDManager : MonoBehaviour
             // プレハブ使用時も枠（Outline）を追加する
             if (detailPanelObj.GetComponent<Outline>() == null)
             {
-                Outline outline = detailPanelObj.AddComponent<Outline>();
-                outline.effectColor = new Color(0.5f, 0.5f, 0.5f, 1f);
-                outline.effectDistance = new Vector2(2f, -2f);
+                Outline prefabOutline = detailPanelObj.AddComponent<Outline>();
+                prefabOutline.effectColor = new Color(0.5f, 0.5f, 0.5f, 1f);
+                prefabOutline.effectDistance = new Vector2(2f, -2f);
             }
 
             detailPanelObj.SetActive(false);
